@@ -20,7 +20,7 @@ const CHAR_VALUES: [i32; 123] = [
 fn write_chars(
     bytes: &mut Vec<u8>,
     bit_index: usize,
-    char_len: usize,
+    value_len: usize,
     char_value: i32,
     is_last: bool,
 ) {
@@ -29,14 +29,20 @@ fn write_chars(
         bytes.push(0);
     }
 
+    // offset in current byte
     let offset = bit_index - 8 * byte_index;
+
+    // writes value into byte (only part that fits)
     bytes[byte_index] |= ((char_value << offset) & 0xFF) as u8;
 
-    if offset > 8 - char_len && !is_last {
+    // in case of value going into next byte add that part
+    if offset > 8 - value_len && !is_last {
         let byte_index_next = byte_index + 1;
         if byte_index_next >= bytes.len() {
             bytes.push(0);
         }
+
+        // write rest of value into next byte
         bytes[byte_index_next] |= (char_value >> (8 - offset)) as u8;
     }
 }
@@ -51,16 +57,16 @@ fn base62_decode(input: &str) -> Option<Vec<u8>> {
         if char_value == -1 {
             return None;
         }
-        // 5 if char_value is even and less than 32, 6 otherwise
-        let char_len = if (char_value & 30) == 30 { 5 } else { 6 };
+        // 5 if char_value is 30 or 31, 6 otherwise (don't ask me why)
+        let value_len = if (char_value & 30) == 30 { 5 } else { 6 };
         write_chars(
             &mut bytes_out,
             out_pos,
-            char_len,
+            value_len,
             char_value,
             i == input.len() - 1,
         );
-        out_pos += char_len;
+        out_pos += value_len;
     }
 
     Some(bytes_out)
@@ -79,19 +85,19 @@ fn decode_track_code(track_code: &str) -> Option<Vec<u8>> {
     let td_start = track_code.find("4p")?;
     let track_data = &track_code.get(td_start..)?;
 
-    // base64-decode and then decompress using zlib twice
+    // base64-decode and then decompress using zlib, then repeat
     let step1 = base62_decode(track_data)?;
     let step2 = decompress(&step1)?;
     let step2_str = String::from_utf8(step2).ok()?;
     let step3 = base62_decode(&step2_str)?;
     let step4 = decompress(&step3)?;
 
-    // remove data that is ignored in calculating track ID
-    let l = *step4.first()? as usize;
-    let h = *step4.get(1 + l)? as usize;
-    let data = step4.get((l + h + 2)..)?.to_vec();
+    // remove data that is not track data (track name and author)
+    let name_len = *step4.first()? as usize;
+    let author_len = *step4.get(1 + name_len)? as usize;
+    let track_data = step4.get((name_len + author_len + 2)..)?.to_vec();
 
-    Some(data)
+    Some(track_data)
 }
 
 fn hash_track_data(track_data: Vec<u8>) -> String {
