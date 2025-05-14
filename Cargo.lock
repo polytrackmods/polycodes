@@ -103,7 +103,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "polydecoder"
+name = "polycodes"
 version = "0.1.0"
 dependencies = [
  "flate2",
