@@ -4,16 +4,22 @@ use std::io::Read;
 
 use crate::base62;
 
+pub struct Track {
+    pub name: String,
+    pub author: Option<String>,
+    pub track_data: Vec<u8>,
+}
+
 /// Computes the track ID for a given track code. Returns [`None`] if something failed in the process.
 pub fn export_to_id(track_code: &str) -> Option<String> {
     let track_data = decode_track_code(track_code)?;
-    let id = hash_vec(track_data.2);
+    let id = hash_vec(track_data.track_data);
     Some(id)
 }
 
-/// Decodes the given track code and yields a tuple of the track name, track author, and the (raw binary) track data.
+/// Decodes the given track code and yields a struct containing the track name, track author, and the (raw binary) track data.
 /// Returns [`None`] if something failed in the process.
-pub fn decode_track_code(track_code: &str) -> Option<(String, String, Vec<u8>)> {
+pub fn decode_track_code(track_code: &str) -> Option<Track> {
     // only use the actual data, skipping the "PolyTrack1"
     let track_code = track_code.get(10..)?;
     // ZLIB header 0x78DA is always encoded to `4p` and other stuff
@@ -31,19 +37,19 @@ pub fn decode_track_code(track_code: &str) -> Option<(String, String, Vec<u8>)> 
     let author_len = *step4.get(1 + name_len)? as usize;
 
     let name = String::from_utf8(step4.get(1..(1 + name_len))?.to_vec()).ok()?;
-    let author = (if author_len > 0 {
-        String::from_utf8(
-            step4
-                .get((name_len + 2)..(name_len + author_len + 2))?
-                .to_vec(),
-        )
-        .ok()
-    } else {
-        None
-    })?;
+    let author = String::from_utf8(
+        step4
+            .get((name_len + 2)..(name_len + author_len + 2))?
+            .to_vec(),
+    )
+    .ok();
     let track_data = step4.get((name_len + author_len + 2)..)?.to_vec();
 
-    Some((name, author, track_data))
+    Some(Track {
+        name,
+        author,
+        track_data,
+    })
 }
 
 fn decompress(data: &[u8]) -> Option<Vec<u8>> {

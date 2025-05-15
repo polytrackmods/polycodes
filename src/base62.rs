@@ -17,20 +17,20 @@ const DECODE_VALUES: [i32; 123] = [
 /// Encode the givven byte buffer into base62 encoded text according to PolyTrack's base62 implementation.
 /// Returns [`None`] if something failed in the process.
 pub fn encode(input: &[u8]) -> Option<String> {
-    let mut i = 0;
+    let mut bit_pos = 0;
     let mut res = String::new();
 
-    while i < 8 * input.len() {
-        let s = encode_chars(input, i)?;
-        let a;
-        if (s & 30) == 30 {
-            a = s & 31;
-            i += 5;
+    while bit_pos < 8 * input.len() {
+        let mut char_value = encode_chars(input, bit_pos)?;
+        // if char_num ends with 11110, shorten it to 5 bits
+        // (getting rid of value 62 and 63, which are too big for base62)
+        if (char_value & 30) == 30 {
+            char_value &= 31;
+            bit_pos += 5;
         } else {
-            a = s;
-            i += 6;
+            bit_pos += 6;
         }
-        res.push(*ENCODE_VALUES.get(a)?);
+        res.push(*ENCODE_VALUES.get(char_value)?);
     }
 
     Some(res)
@@ -48,7 +48,7 @@ pub fn decode(input: &str) -> Option<Vec<u8>> {
         if char_value == -1 {
             return None;
         }
-        // 5 if char_value is 30 or 31, 6 otherwise (don't ask me why)
+        // 5 if char_value is 30 or 31, 6 otherwise (see encode for explanation)
         let value_len = if (char_value & 30) == 30 { 5 } else { 6 };
         decode_chars(
             &mut bytes_out,
@@ -63,18 +63,25 @@ pub fn decode(input: &str) -> Option<Vec<u8>> {
     Some(bytes_out)
 }
 
-fn encode_chars(bytes: &[u8], t: usize) -> Option<usize> {
-    if t >= 8 * bytes.len() {
+fn encode_chars(bytes: &[u8], bit_index: usize) -> Option<usize> {
+    if bit_index >= 8 * bytes.len() {
         return None;
     }
 
-    let i = t / 8;
-    let n = *bytes.get(i)? as usize;
-    let r = t - 8 * i;
-    if r <= 2 || i >= bytes.len() - 1 {
-        Some((n & (63 << r)) >> r)
+    let byte_index = bit_index / 8;
+    let current_byte = *bytes.get(byte_index)? as usize;
+    let offset = bit_index - 8 * byte_index;
+    if offset <= 2 || byte_index >= bytes.len() - 1 {
+        // move mask into right position, get only offset bits of current_byte, move back
+        Some((current_byte & (63 << offset)) >> offset)
     } else {
-        Some((n & (63 << r)) >> r | (((*bytes.get(i + 1)? as usize) & (63 >> (8 - r))) << (8 - r)))
+        let next_byte = *bytes.get(byte_index + 1)? as usize;
+        // same cooncept as above, move mask into right position,
+        // get correct bits of current and next byte, move back, combine the two
+        Some(
+            ((current_byte & (63 << offset)) >> offset)
+                | ((next_byte & (63 >> (8 - offset))) << (8 - offset)),
+        )
     }
 }
 
