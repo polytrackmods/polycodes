@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+bincode = "2.0.1"
 flate2 = "1.1.1"
 hex = "0.4.3"
+num_enum = "0.7.3"
 sha2 = "0.10.9"

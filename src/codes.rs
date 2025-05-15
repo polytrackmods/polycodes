@@ -1,8 +1,14 @@
+use std::{fmt::Display, io::Read};
+
+use bincode::Encode;
 use flate2::read::ZlibDecoder;
+use num_enum::TryFromPrimitive;
 use sha2::{Digest, Sha256};
-use std::io::Read;
 
 use crate::base62;
+
+pub const CP_IDS: [u8; 4] = [52, 65, 75, 77];
+pub const START_IDS: [u8; 4] = [5, 91, 92, 93];
 
 pub struct Track {
     pub name: String,
@@ -10,11 +16,58 @@ pub struct Track {
     pub track_data: Vec<u8>,
 }
 
-/// Computes the track ID for a given track code. Returns [`None`] if something failed in the process.
-pub fn export_to_id(track_code: &str) -> Option<String> {
-    let track_data = decode_track_code(track_code)?;
-    let id = hash_vec(track_data.track_data);
-    Some(id)
+#[derive(Encode)]
+pub struct TrackInfo {
+    pub env: Environment,
+    pub sun_dir: u8,
+
+    pub min_x: i32,
+    pub min_y: i32,
+    pub min_z: i32,
+
+    pub data_bytes: u8,
+    pub parts: Vec<Part>,
+}
+
+#[derive(TryFromPrimitive, Encode)]
+#[repr(u8)]
+pub enum Environment {
+    Summer,
+    Winter,
+    Desert,
+}
+
+#[derive(Encode)]
+pub struct Part {
+    pub id: u8,
+    pub amount: u32,
+    pub blocks: Vec<Block>,
+}
+
+#[derive(Encode)]
+pub struct Block {
+    pub x: u32,
+    pub y: u32,
+    pub z: u32,
+
+    // why arent these combined into a single byte :( (literally takes up 5 bits in a span of 16 bits now)
+    pub rotation: u8,
+    pub dir: Direction,
+
+    pub colour: u8,
+    pub cp_order: Option<u16>,
+    pub start_order: Option<u32>,
+}
+
+#[derive(TryFromPrimitive, Encode)]
+#[repr(u8)]
+pub enum Direction {
+    YPos,
+    YNeg,
+    XPos,
+    XNeg,
+    ZPos,
+    ZNeg,
 }
 
 /// Decodes the given track code and yields a struct containing the track name, track author, and the (raw binary) track data.
@@ -52,6 +105,131 @@ pub fn decode_track_code(track_code: &str) -> Option<Track> {
     })
 }
 
+/// Decodes the (raw binary) track data into a struct representing everything that is in the data.
+/// Fields of all involved structs correspond exactly to how the data is stored in PolyTrack itself.
+/// Returns [`None`] if the data is not valid track data.
+pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
+    #[inline]
+    fn read_u8(buf: &[u8], offset: &mut usize) -> Option<u8> {
+        let res = buf.get(*offset).copied();
+        *offset += 1;
+        res
+    }
+    #[inline]
+    fn read_u16(buf: &[u8], offset: &mut usize) -> Option<u16> {
+        let res = Some(*buf.get(*offset)? as u16 | ((*buf.get(*offset + 1)? as u16) << 8));
+        *offset += 2;
+        res
+    }
+    #[inline]
+    fn read_u32(buf: &[u8], offset: &mut usize) -> Option<u32> {
+        let res = Some(
+            *buf.get(*offset)? as u32
+                | ((*buf.get(*offset + 1)? as u32) << 8)
+                | ((*buf.get(*offset + 2)? as u32) << 16)
+                | ((*buf.get(*offset + 3)? as u32) << 24),
+        );
+        *offset += 4;
+        res
+    }
+
+    let mut offset = 0;
+
+    let env = Environment::try_from(read_u8(data, &mut offset)?).ok()?;
+    let sun_dir = read_u8(data, &mut offset)?;
+
+    let min_x = read_u32(data, &mut offset)? as i32;
+    let min_y = read_u32(data, &mut offset)? as i32;
+    let min_z = read_u32(data, &mut offset)? as i32;
+
+    let data_bytes = read_u8(data, &mut offset)?;
+    let x_bytes = data_bytes & 3;
+    let y_bytes = (data_bytes >> 2) & 3;
+    let z_bytes = (data_bytes >> 4) & 3;
+
+    let mut parts = Vec::new();
+    while offset < data.len() {
+        let id = read_u8(data, &mut offset)?;
+        let amount = read_u32(data, &mut offset)?;
+
+        let mut blocks = Vec::new();
+        for _ in 0..amount {
+            let mut x = 0;
+            for i in 0..x_bytes {
+                x |= (*data.get(offset + (i as usize))? as u32) << (8 * i)
+            }
+            offset += x_bytes as usize;
+
+            let mut y = 0;
+            for i in 0..x_bytes {
+                y |= (*data.get(offset + (i as usize))? as u32) << (8 * i)
+            }
+            offset += y_bytes as usize;
+
+            let mut z = 0;
+            for i in 0..x_bytes {
+                z |= (*data.get(offset + (i as usize))? as u32) << (8 * i)
+            }
+            offset += z_bytes as usize;
+
+            let rotation = read_u8(data, &mut offset)?;
+            if rotation > 3 {
+                return None;
+            }
+            let dir = Direction::try_from(read_u8(data, &mut offset)?).ok()?;
+            let colour = read_u8(data, &mut offset)?;
+            // no custom colour support for now
+            if colour > 3 && colour < 32 && colour > 40 {
+                return None;
+            }
+
+            let cp_order = if CP_IDS.contains(&id) {
+                Some(read_u16(data, &mut offset)?)
+            } else {
+                None
+            };
+            let start_order = if START_IDS.contains(&id) {
+                Some(read_u32(data, &mut offset)?)
+            } else {
+                None
+            };
+
+            blocks.push(Block {
+                x,
+                y,
+                z,
+
+                rotation,
+                dir,
+
+                colour,
+                cp_order,
+                start_order,
+            });
+        }
+        parts.push(Part { id, amount, blocks });
+    }
+
+    Some(TrackInfo {
+        env,
+        sun_dir,
+
+        min_x,
+        min_y,
+        min_z,
+
+        data_bytes,
+        parts,
+    })
+}
+
+/// Computes the track ID for a given track code. Returns [`None`] if something failed in the process.
+pub fn export_to_id(track_code: &str) -> Option<String> {
+    let track_data = decode_track_code(track_code)?;
+    let id = hash_vec(track_data.track_data);
+    Some(id)
+}
+
 fn decompress(data: &[u8]) -> Option<Vec<u8>> {
     let mut decoder = ZlibDecoder::new(data);
     let mut decompressed_data = Vec::new();
@@ -64,4 +242,14 @@ fn hash_vec(track_data: Vec<u8>) -> String {
     hasher.update(&track_data);
     let result = hasher.finalize();
     hex::encode(result)
+}
+
+impl Display for Environment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Summer => write!(f, "Summer"),
+            Self::Winter => write!(f, "Winter"),
+            Self::Desert => write!(f, "Desert"),
+        }
+    }
 }
