@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use std::io::Read as _;
 
 use flate2::read::ZlibDecoder;
@@ -131,6 +134,7 @@ pub fn hash_vec(track_data: Vec<u8>) -> String {
     result
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Track {
     pub name: String,
     pub author: Option<String>,

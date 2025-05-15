@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use std::fmt::Display;
 
 use num_enum::TryFromPrimitive;
