@@ -16,7 +16,7 @@ pub struct Track {
     pub track_data: Vec<u8>,
 }
 
-#[derive(Encode)]
+#[derive(Encode, Debug)]
 pub struct TrackInfo {
     pub env: Environment,
     pub sun_dir: u8,
@@ -29,7 +29,7 @@ pub struct TrackInfo {
     pub parts: Vec<Part>,
 }
 
-#[derive(TryFromPrimitive, Encode)]
+#[derive(TryFromPrimitive, Encode, Debug)]
 #[repr(u8)]
 pub enum Environment {
     Summer,
@@ -37,14 +37,14 @@ pub enum Environment {
     Desert,
 }
 
-#[derive(Encode)]
+#[derive(Encode, Debug)]
 pub struct Part {
     pub id: u8,
     pub amount: u32,
     pub blocks: Vec<Block>,
 }
 
-#[derive(Encode)]
+#[derive(Encode, Debug)]
 pub struct Block {
     pub x: u32,
     pub y: u32,
@@ -59,7 +59,7 @@ pub struct Block {
     pub start_order: Option<u32>,
 }
 
-#[derive(TryFromPrimitive, Encode)]
+#[derive(TryFromPrimitive, Encode, Debug)]
 #[repr(u8)]
 pub enum Direction {
     YPos,

@@ -14,7 +14,7 @@ const DECODE_VALUES: [i32; 123] = [
     51,
 ];
 
-/// Encode the givven byte buffer into base62 encoded text according to PolyTrack's base62 implementation.
+/// Encode the given byte buffer into base62 encoded text according to PolyTrack's base62 implementation.
 /// Returns [`None`] if something failed in the process.
 pub fn encode(input: &[u8]) -> Option<String> {
     let mut bit_pos = 0;
@@ -76,7 +76,7 @@ fn encode_chars(bytes: &[u8], bit_index: usize) -> Option<usize> {
         Some((current_byte & (63 << offset)) >> offset)
     } else {
         let next_byte = *bytes.get(byte_index + 1)? as usize;
-        // same cooncept as above, move mask into right position,
+        // same concept as above, move mask into right position,
         // get correct bits of current and next byte, move back, combine the two
         Some(
             ((current_byte & (63 << offset)) >> offset)
