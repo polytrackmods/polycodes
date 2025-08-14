@@ -1,22 +1,13 @@
-use std::{fmt::Display, io::Read};
+use std::fmt::Display;
 
-use bincode::Encode;
-use flate2::read::ZlibDecoder;
 use num_enum::TryFromPrimitive;
-use sha2::{Digest, Sha256};
 
-use crate::base62;
+use crate::tools::{self, Track, hash_vec};
 
 pub const CP_IDS: [u8; 4] = [52, 65, 75, 77];
 pub const START_IDS: [u8; 4] = [5, 91, 92, 93];
 
-pub struct Track {
-    pub name: String,
-    pub author: Option<String>,
-    pub track_data: Vec<u8>,
-}
-
-#[derive(Encode, Debug)]
+#[derive(Debug)]
 pub struct TrackInfo {
     pub env: Environment,
     pub sun_dir: u8,
@@ -29,7 +20,7 @@ pub struct TrackInfo {
     pub parts: Vec<Part>,
 }
 
-#[derive(TryFromPrimitive, Encode, Debug)]
+#[derive(TryFromPrimitive, Debug)]
 #[repr(u8)]
 pub enum Environment {
     Summer,
@@ -37,14 +28,14 @@ pub enum Environment {
     Desert,
 }
 
-#[derive(Encode, Debug)]
+#[derive(Debug)]
 pub struct Part {
     pub id: u8,
     pub amount: u32,
     pub blocks: Vec<Block>,
 }
 
-#[derive(Encode, Debug)]
+#[derive(Debug)]
 pub struct Block {
     pub x: u32,
     pub y: u32,
@@ -59,7 +50,7 @@ pub struct Block {
     pub start_order: Option<u32>,
 }
 
-#[derive(TryFromPrimitive, Encode, Debug)]
+#[derive(TryFromPrimitive, Debug)]
 #[repr(u8)]
 pub enum Direction {
     YPos,
@@ -80,11 +71,11 @@ pub fn decode_track_code(track_code: &str) -> Option<Track> {
     let track_data = track_code.get(td_start..)?;
 
     // (base64-decode and then decompress using zlib) x2
-    let step1 = base62::decode(track_data)?;
-    let step2 = decompress(&step1)?;
+    let step1 = tools::decode(track_data)?;
+    let step2 = tools::decompress(&step1)?;
     let step2_str = String::from_utf8(step2).ok()?;
-    let step3 = base62::decode(&step2_str)?;
-    let step4 = decompress(&step3)?;
+    let step3 = tools::decode(&step2_str)?;
+    let step4 = tools::decompress(&step3)?;
 
     let name_len = *step4.first()? as usize;
     let author_len = *step4.get(1 + name_len)? as usize;
@@ -228,20 +219,6 @@ pub fn export_to_id(track_code: &str) -> Option<String> {
     let track_data = decode_track_code(track_code)?;
     let id = hash_vec(track_data.track_data);
     Some(id)
-}
-
-fn decompress(data: &[u8]) -> Option<Vec<u8>> {
-    let mut decoder = ZlibDecoder::new(data);
-    let mut decompressed_data = Vec::new();
-    decoder.read_to_end(&mut decompressed_data).ok()?;
-    Some(decompressed_data)
-}
-
-fn hash_vec(track_data: Vec<u8>) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(&track_data);
-    let result = hasher.finalize();
-    hex::encode(result)
 }
 
 impl Display for Environment {

@@ -1,3 +1,7 @@
+use std::io::Read as _;
+
+use flate2::read::ZlibDecoder;
+
 const ENCODE_VALUES: [char; 62] = [
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
     'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
@@ -113,4 +117,22 @@ fn decode_chars(
         // write rest of value into next byte
         bytes[byte_index_next] |= (char_value >> (8 - offset)) as u8;
     }
+}
+
+pub fn decompress(data: &[u8]) -> Option<Vec<u8>> {
+    let mut decoder = ZlibDecoder::new(data);
+    let mut decompressed_data = Vec::new();
+    decoder.read_to_end(&mut decompressed_data).ok()?;
+    Some(decompressed_data)
+}
+
+pub fn hash_vec(track_data: Vec<u8>) -> String {
+    let result = sha256::digest(track_data);
+    result
+}
+
+pub struct Track {
+    pub name: String,
+    pub author: Option<String>,
+    pub track_data: Vec<u8>,
 }
