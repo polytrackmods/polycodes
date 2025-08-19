@@ -19,7 +19,7 @@ fn full_convert() {
 }
 
 #[test]
-fn full_decode() {
+fn track_decode() {
     let test_values = [
         (
             "PolyTrack14p9i0XLjMgsD1nSz23q8JF3jMQ3dPQn907i8NTfGh7OmeEz13A9AAw30xwA",
@@ -49,5 +49,141 @@ fn full_decode() {
     for (code, track) in test_values {
         let result = decode_track_code(code);
         assert_eq!(result, Some(track));
+    }
+}
+
+#[test]
+fn data_decode() {
+    let test_values = [(
+        vec![
+            0, 28, 152, 255, 255, 255, 4, 0, 0, 0, 208, 255, 255, 255, 21, 5, 1, 0, 0, 0, 8, 0, 28,
+            0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 8, 0, 24, 0, 0, 0, 8, 0, 20, 0, 0, 0, 8, 0, 16, 0,
+            0, 0, 8, 0, 8, 0, 0, 0, 8, 0, 4, 0, 0, 0, 36, 2, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 20,
+            0, 0, 0, 146, 1, 0, 0, 0, 12, 0, 12, 1, 0, 2,
+        ],
+        TrackInfo {
+            env: Environment::Summer,
+            sun_dir: 28,
+            min_x: -104,
+            min_y: 4,
+            min_z: -48,
+            data_bytes: 21,
+            parts: vec![
+                Part {
+                    id: 5,
+                    amount: 1,
+                    blocks: vec![Block {
+                        x: 8,
+                        y: 0,
+                        z: 28,
+                        rotation: 0,
+                        dir: Direction::YPos,
+                        color: 0,
+                        cp_order: None,
+                        start_order: Some(0),
+                    }],
+                },
+                Part {
+                    id: 0,
+                    amount: 5,
+                    blocks: vec![
+                        Block {
+                            x: 8,
+                            y: 0,
+                            z: 24,
+                            rotation: 0,
+                            dir: Direction::YPos,
+                            color: 0,
+                            cp_order: None,
+                            start_order: None,
+                        },
+                        Block {
+                            x: 8,
+                            y: 0,
+                            z: 20,
+                            rotation: 0,
+                            dir: Direction::YPos,
+                            color: 0,
+                            cp_order: None,
+                            start_order: None,
+                        },
+                        Block {
+                            x: 8,
+                            y: 0,
+                            z: 16,
+                            rotation: 0,
+                            dir: Direction::YPos,
+                            color: 0,
+                            cp_order: None,
+                            start_order: None,
+                        },
+                        Block {
+                            x: 8,
+                            y: 0,
+                            z: 8,
+                            rotation: 0,
+                            dir: Direction::YPos,
+                            color: 0,
+                            cp_order: None,
+                            start_order: None,
+                        },
+                        Block {
+                            x: 8,
+                            y: 0,
+                            z: 4,
+                            rotation: 0,
+                            dir: Direction::YPos,
+                            color: 0,
+                            cp_order: None,
+                            start_order: None,
+                        },
+                    ],
+                },
+                Part {
+                    id: 36,
+                    amount: 2,
+                    blocks: vec![
+                        Block {
+                            x: 8,
+                            y: 0,
+                            z: 0,
+                            rotation: 0,
+                            dir: Direction::YPos,
+                            color: 0,
+                            cp_order: None,
+                            start_order: None,
+                        },
+                        Block {
+                            x: 0,
+                            y: 0,
+                            z: 20,
+                            rotation: 0,
+                            dir: Direction::YPos,
+                            color: 0,
+                            cp_order: None,
+                            start_order: None,
+                        },
+                    ],
+                },
+                Part {
+                    id: 146,
+                    amount: 1,
+                    blocks: vec![Block {
+                        x: 12,
+                        y: 0,
+                        z: 12,
+                        rotation: 1,
+                        dir: Direction::YPos,
+                        color: 2,
+                        cp_order: None,
+                        start_order: None,
+                    }],
+                },
+            ],
+        },
+    )];
+    for (data, track_data) in test_values {
+        let result = decode_track_data(&data);
+        assert_eq!(result, Some(track_data));
     }
 }

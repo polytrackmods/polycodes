@@ -1,3 +1,4 @@
+#![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 #[cfg(test)]
 mod tests;
 
@@ -21,7 +22,8 @@ const DECODE_VALUES: [i32; 123] = [
     51,
 ];
 
-/// Encode the given byte buffer into base62 encoded text according to PolyTrack's base62 implementation.
+#[must_use]
+/// Encode the given byte buffer into base62 encoded text according to Polytrack's base62 implementation.
 /// Returns [`None`] if something failed in the process.
 pub fn encode(input: &[u8]) -> Option<String> {
     let mut bit_pos = 0;
@@ -43,7 +45,8 @@ pub fn encode(input: &[u8]) -> Option<String> {
     Some(res)
 }
 
-/// Decode the given string as base62 text according to PolyTrack's base62 implementation.
+#[must_use]
+/// Decode the given string as base62 text according to Polytrack's base62 implementation.
 /// Returns [`None`] if any character isn't valid for base62 encoded text.
 pub fn decode(input: &str) -> Option<Vec<u8>> {
     let mut out_pos = 0;
@@ -122,6 +125,7 @@ fn decode_chars(
     }
 }
 
+#[must_use]
 pub fn decompress(data: &[u8]) -> Option<Vec<u8>> {
     let mut decoder = ZlibDecoder::new(data);
     let mut decompressed_data = Vec::new();
@@ -129,12 +133,12 @@ pub fn decompress(data: &[u8]) -> Option<Vec<u8>> {
     Some(decompressed_data)
 }
 
+#[must_use]
 pub fn hash_vec(track_data: Vec<u8>) -> String {
-    let result = sha256::digest(track_data);
-    result
+    sha256::digest(track_data)
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Track {
     pub name: String,
     pub author: Option<String>,

@@ -1,20 +1,24 @@
+#![allow(clippy::cast_possible_truncation)]
+#[cfg(test)]
+mod tests;
+
 use crate::tools::{self, Track, hash_vec};
 
 pub const CP_IDS: [u8; 4] = [52, 65, 75, 77];
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct TrackInfo {
     pub parts: Vec<Part>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Part {
     pub id: u8,
     pub amount: u32,
     pub blocks: Vec<Block>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Block {
     pub x: i32,
     pub y: i32,
@@ -24,10 +28,11 @@ pub struct Block {
     pub cp_order: Option<u16>,
 }
 
+#[must_use]
 pub fn decode_track_code(track_code: &str) -> Option<Track> {
     let track_code = track_code.get(2..)?;
     let metadata = tools::decode(track_code.get(..2)?)?;
-    let name_len = *metadata.get(0)? as usize;
+    let name_len = *metadata.first()? as usize;
     let track_name_raw = tools::decode(track_code.get(2..2 + name_len)?)?;
     let name = String::from_utf8(track_name_raw).ok()?;
     let track_data = tools::decompress(&tools::decode(track_code.get(2 + name_len..)?)?)?;
@@ -38,6 +43,7 @@ pub fn decode_track_code(track_code: &str) -> Option<Track> {
     })
 }
 
+#[must_use]
 pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
     #[inline]
     fn read_u8(buf: &[u8], offset: &mut usize) -> Option<u8> {
@@ -47,17 +53,17 @@ pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
     }
     #[inline]
     fn read_u16(buf: &[u8], offset: &mut usize) -> Option<u16> {
-        let res = Some(*buf.get(*offset)? as u16 | ((*buf.get(*offset + 1)? as u16) << 8));
+        let res = Some(u16::from(*buf.get(*offset)?) | (u16::from(*buf.get(*offset + 1)?) << 8));
         *offset += 2;
         res
     }
     #[inline]
     fn read_u32(buf: &[u8], offset: &mut usize) -> Option<u32> {
         let res = Some(
-            *buf.get(*offset)? as u32
-                | ((*buf.get(*offset + 1)? as u32) << 8)
-                | ((*buf.get(*offset + 2)? as u32) << 16)
-                | ((*buf.get(*offset + 3)? as u32) << 24),
+            u32::from(*buf.get(*offset)?)
+                | (u32::from(*buf.get(*offset + 1)?) << 8)
+                | (u32::from(*buf.get(*offset + 2)?) << 16)
+                | (u32::from(*buf.get(*offset + 3)?) << 24),
         );
         *offset += 4;
         res
@@ -65,9 +71,9 @@ pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
     #[inline]
     fn read_i24(buf: &[u8], offset: &mut usize) -> Option<i32> {
         let res = Some(
-            *buf.get(*offset)? as i32
-                | ((*buf.get(*offset + 1)? as i32) << 8)
-                | ((*buf.get(*offset + 2)? as i32) << 16),
+            i32::from(*buf.get(*offset)?)
+                | (i32::from(*buf.get(*offset + 1)?) << 8)
+                | (i32::from(*buf.get(*offset + 2)?) << 16),
         );
         *offset += 3;
         res
@@ -106,6 +112,7 @@ pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
     Some(TrackInfo { parts })
 }
 
+#[must_use]
 pub fn export_to_id(track_code: &str) -> Option<String> {
     let track_data = decode_track_code(track_code)?;
     let id = hash_vec(track_data.track_data);

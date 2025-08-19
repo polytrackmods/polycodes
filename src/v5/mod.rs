@@ -1,3 +1,4 @@
+#![allow(clippy::cast_possible_wrap)]
 #[cfg(test)]
 mod tests;
 
@@ -10,7 +11,7 @@ use crate::tools::{self, Track, hash_vec};
 pub const CP_IDS: [u8; 4] = [52, 65, 75, 77];
 pub const START_IDS: [u8; 4] = [5, 91, 92, 93];
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct TrackInfo {
     pub env: Environment,
     pub sun_dir: u8,
@@ -23,7 +24,7 @@ pub struct TrackInfo {
     pub parts: Vec<Part>,
 }
 
-#[derive(TryFromPrimitive, Debug)]
+#[derive(TryFromPrimitive, Debug, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Environment {
     Summer,
@@ -31,14 +32,14 @@ pub enum Environment {
     Desert,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Part {
     pub id: u8,
     pub amount: u32,
     pub blocks: Vec<Block>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Block {
     pub x: u32,
     pub y: u32,
@@ -48,12 +49,12 @@ pub struct Block {
     pub rotation: u8,
     pub dir: Direction,
 
-    pub colour: u8,
+    pub color: u8,
     pub cp_order: Option<u16>,
     pub start_order: Option<u32>,
 }
 
-#[derive(TryFromPrimitive, Debug)]
+#[derive(TryFromPrimitive, Debug, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Direction {
     YPos,
@@ -64,6 +65,7 @@ pub enum Direction {
     ZNeg,
 }
 
+#[must_use]
 /// Decodes the given track code and yields a struct containing the track name, track author, and the (raw binary) track data.
 /// Returns [`None`] if something failed in the process.
 pub fn decode_track_code(track_code: &str) -> Option<Track> {
@@ -83,7 +85,7 @@ pub fn decode_track_code(track_code: &str) -> Option<Track> {
     let name_len = *step4.first()? as usize;
     let author_len = *step4.get(1 + name_len)? as usize;
 
-    let name = String::from_utf8(step4.get(1..(1 + name_len))?.to_vec()).ok()?;
+    let name = String::from_utf8(step4.get(1..=name_len)?.to_vec()).ok()?;
     let author = String::from_utf8(
         step4
             .get((name_len + 2)..(name_len + author_len + 2))?
@@ -99,8 +101,12 @@ pub fn decode_track_code(track_code: &str) -> Option<Track> {
     })
 }
 
-/// Decodes the (raw binary) track data into a struct representing everything that is in the data.
-/// Fields of all involved structs correspond exactly to how the data is stored in PolyTrack itself.
+#[must_use]
+/// Decodes the (raw binary) track data into a struct
+/// representing everything that is in the data.
+///
+/// Fields of all involved structs correspond exactly to how
+/// the data is stored in Polytrack itself.
 /// Returns [`None`] if the data is not valid track data.
 pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
     #[inline]
@@ -111,17 +117,17 @@ pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
     }
     #[inline]
     fn read_u16(buf: &[u8], offset: &mut usize) -> Option<u16> {
-        let res = Some(*buf.get(*offset)? as u16 | ((*buf.get(*offset + 1)? as u16) << 8));
+        let res = Some(u16::from(*buf.get(*offset)?) | (u16::from(*buf.get(*offset + 1)?) << 8));
         *offset += 2;
         res
     }
     #[inline]
     fn read_u32(buf: &[u8], offset: &mut usize) -> Option<u32> {
         let res = Some(
-            *buf.get(*offset)? as u32
-                | ((*buf.get(*offset + 1)? as u32) << 8)
-                | ((*buf.get(*offset + 2)? as u32) << 16)
-                | ((*buf.get(*offset + 3)? as u32) << 24),
+            u32::from(*buf.get(*offset)?)
+                | (u32::from(*buf.get(*offset + 1)?) << 8)
+                | (u32::from(*buf.get(*offset + 2)?) << 16)
+                | (u32::from(*buf.get(*offset + 3)?) << 24),
         );
         *offset += 4;
         res
@@ -150,19 +156,19 @@ pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
         for _ in 0..amount {
             let mut x = 0;
             for i in 0..x_bytes {
-                x |= (*data.get(offset + (i as usize))? as u32) << (8 * i)
+                x |= u32::from(*data.get(offset + (i as usize))?) << (8 * i);
             }
             offset += x_bytes as usize;
 
             let mut y = 0;
             for i in 0..x_bytes {
-                y |= (*data.get(offset + (i as usize))? as u32) << (8 * i)
+                y |= u32::from(*data.get(offset + (i as usize))?) << (8 * i);
             }
             offset += y_bytes as usize;
 
             let mut z = 0;
             for i in 0..x_bytes {
-                z |= (*data.get(offset + (i as usize))? as u32) << (8 * i)
+                z |= u32::from(*data.get(offset + (i as usize))?) << (8 * i);
             }
             offset += z_bytes as usize;
 
@@ -171,9 +177,9 @@ pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
                 return None;
             }
             let dir = Direction::try_from(read_u8(data, &mut offset)?).ok()?;
-            let colour = read_u8(data, &mut offset)?;
-            // no custom colour support for now
-            if colour > 3 && colour < 32 && colour > 40 {
+            let color = read_u8(data, &mut offset)?;
+            // no custom color support for now
+            if color > 3 && color < 32 && color > 40 {
                 return None;
             }
 
@@ -196,7 +202,7 @@ pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
                 rotation,
                 dir,
 
-                colour,
+                color,
                 cp_order,
                 start_order,
             });
@@ -217,6 +223,7 @@ pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
     })
 }
 
+#[must_use]
 /// Computes the track ID for a given track code. Returns [`None`] if something failed in the process.
 pub fn export_to_id(track_code: &str) -> Option<String> {
     let track_data = decode_track_code(track_code)?;
