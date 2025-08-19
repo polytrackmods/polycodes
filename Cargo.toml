@@ -2,7 +2,7 @@
 name = "polytrack-codes"
 version = "0.1.0"
 edition = "2024"
-authors = ["Ireozar <ireo@ireo.xyz>"]
+authors = ["Ireozar <ireo@ireo.xyz>", "GameBuilder202 <unkown.sr71@gmail.com>"]
 license = "MIT"
 description = "Collection of utilities to work with PolyTrack's track codes"
 repository = "https://codeberg.org/ireozar/polycodes"
