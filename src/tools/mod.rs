@@ -144,3 +144,39 @@ pub struct Track {
     pub author: Option<String>,
     pub track_data: Vec<u8>,
 }
+
+pub(crate) mod read {
+    #[inline]
+    pub fn read_u8(buf: &[u8], offset: &mut usize) -> Option<u8> {
+        let res = buf.get(*offset).copied();
+        *offset += 1;
+        res
+    }
+    #[inline]
+    pub fn read_u16(buf: &[u8], offset: &mut usize) -> Option<u16> {
+        let res = Some(u16::from(*buf.get(*offset)?) | (u16::from(*buf.get(*offset + 1)?) << 8));
+        *offset += 2;
+        res
+    }
+    #[inline]
+    pub fn read_i24(buf: &[u8], offset: &mut usize) -> Option<i32> {
+        let res = Some(
+            i32::from(*buf.get(*offset)?)
+                | (i32::from(*buf.get(*offset + 1)?) << 8)
+                | (i32::from(*buf.get(*offset + 2)?) << 16),
+        );
+        *offset += 3;
+        res
+    }
+    #[inline]
+    pub fn read_u32(buf: &[u8], offset: &mut usize) -> Option<u32> {
+        let res = Some(
+            u32::from(*buf.get(*offset)?)
+                | (u32::from(*buf.get(*offset + 1)?) << 8)
+                | (u32::from(*buf.get(*offset + 2)?) << 16)
+                | (u32::from(*buf.get(*offset + 3)?) << 24),
+        );
+        *offset += 4;
+        res
+    }
+}

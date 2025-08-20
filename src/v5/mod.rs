@@ -6,7 +6,7 @@ use std::fmt::Display;
 
 use num_enum::TryFromPrimitive;
 
-use crate::tools::{self, Track, hash_vec};
+use crate::tools::{self, Track, hash_vec, read::*};
 
 pub const CP_IDS: [u8; 4] = [52, 65, 75, 77];
 pub const START_IDS: [u8; 4] = [5, 91, 92, 93];
@@ -109,30 +109,6 @@ pub fn decode_track_code(track_code: &str) -> Option<Track> {
 /// the data is stored in Polytrack itself.
 /// Returns [`None`] if the data is not valid track data.
 pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
-    #[inline]
-    fn read_u8(buf: &[u8], offset: &mut usize) -> Option<u8> {
-        let res = buf.get(*offset).copied();
-        *offset += 1;
-        res
-    }
-    #[inline]
-    fn read_u16(buf: &[u8], offset: &mut usize) -> Option<u16> {
-        let res = Some(u16::from(*buf.get(*offset)?) | (u16::from(*buf.get(*offset + 1)?) << 8));
-        *offset += 2;
-        res
-    }
-    #[inline]
-    fn read_u32(buf: &[u8], offset: &mut usize) -> Option<u32> {
-        let res = Some(
-            u32::from(*buf.get(*offset)?)
-                | (u32::from(*buf.get(*offset + 1)?) << 8)
-                | (u32::from(*buf.get(*offset + 2)?) << 16)
-                | (u32::from(*buf.get(*offset + 3)?) << 24),
-        );
-        *offset += 4;
-        res
-    }
-
     let mut offset = 0;
 
     let env = Environment::try_from(read_u8(data, &mut offset)?).ok()?;
