@@ -1,6 +1,6 @@
 [package]
 name = "polytrack-codes"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 authors = ["Ireozar <ireo@ireo.xyz>", "GameBuilder202 <unkown.sr71@gmail.com>"]
 license = "MIT"
@@ -11,7 +11,7 @@ readme = "README.md"
 [dependencies]
 base64 = "0.22.1"
 facet = "0.28.0"
-facet-json = "0.28.1"
-flate2 = "1.1.1"
-num_enum = "0.7.3"
+facet-json = "0.28.2"
+flate2 = "1.1.2"
+num_enum = "0.7.4"
 sha256 = "1.6.0"
