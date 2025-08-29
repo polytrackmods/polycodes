@@ -58,7 +58,7 @@ pub fn decode_track_code(track_code: &str) -> Option<Track> {
             .map(|(id, blocks)| Part {
                 id: id.parse().unwrap_or(0),
                 blocks: blocks
-                    .chunks(4)
+                    .chunks_exact(4)
                     .map(|block| Block {
                         x: block[0],
                         y: block[1],

@@ -32,8 +32,8 @@ pub struct Block {
 pub fn decode_track_code(track_code: &str) -> Option<Track> {
     let track_code = track_code.get(2..)?;
     let metadata = tools::decode(track_code.get(..2)?)?;
-    let name_len_step1 = f64::from(*metadata.first()?);
-    let name_len = (name_len_step1 * 4.0 / 3.0).ceil() as usize;
+    let name_len_step1 = *metadata.first()? as usize;
+    let name_len = (name_len_step1 * 4).div_ceil(3);
     let track_name_raw = tools::decode(track_code.get(2..2 + name_len)?)?;
     let name = String::from_utf8(track_name_raw).ok()?;
     let track_data = tools::decompress(&tools::decode(track_code.get(2 + name_len..)?)?)?;

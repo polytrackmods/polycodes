@@ -1,6 +1,6 @@
 [package]
 name = "polytrack-codes"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 authors = ["Ireozar <ireo@ireo.xyz>", "GameBuilder202 <unkown.sr71@gmail.com>"]
 license = "MIT"
