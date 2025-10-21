@@ -2,7 +2,7 @@
 #[cfg(test)]
 mod tests;
 
-use crate::tools::{self, Track, hash_vec, read::*};
+use crate::tools::{self, hash_vec, prelude::*};
 
 pub const CP_IDS: [u8; 4] = [52, 65, 75, 77];
 
@@ -45,6 +45,24 @@ pub fn decode_track_code(track_code: &str) -> Option<Track> {
 }
 
 #[must_use]
+/// Encodes the given track struct into a track code.
+/// Returns [`None`] if something failed in the process.
+///
+/// Output might differ slightly from Polytrack's output
+/// because of Zlib shenanigans, but is still compatible.
+pub fn encode_track_code(track: &Track) -> Option<String> {
+    let track_data = tools::encode(&tools::compress(&track.track_data)?)?;
+
+    let name_raw = track.name.as_bytes().to_vec();
+    let name = tools::encode(&name_raw)?;
+    let metadata = tools::encode(&[(name.len() * 3 / 4) as u8])?;
+
+    // prepend the "v2"
+    let track_code = String::from("v2") + &metadata + &name + &track_data;
+    Some(track_code)
+}
+
+#[must_use]
 pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
     let mut offset = 0;
     let mut parts = Vec::new();
@@ -77,6 +95,27 @@ pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
     }
 
     Some(TrackInfo { parts })
+}
+
+#[must_use]
+/// Encodes the `TrackInfo` struct into raw binary data.
+pub fn encode_track_data(track_info: &TrackInfo) -> Option<Vec<u8>> {
+    let mut data = Vec::new();
+    for part in &track_info.parts {
+        write_u16(&mut data, part.id.into());
+        write_u32(&mut data, part.amount);
+        for block in &part.blocks {
+            write_u24(&mut data, (block.x + i32::pow(2, 23)).cast_unsigned());
+            write_u24(&mut data, block.y.cast_unsigned());
+            write_u24(&mut data, (block.z + i32::pow(2, 23)).cast_unsigned());
+            data.push(block.rotation);
+            if let Some(cp_order) = block.cp_order {
+                write_u16(&mut data, cp_order.into());
+            }
+        }
+    }
+
+    Some(data)
 }
 
 #[must_use]

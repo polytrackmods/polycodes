@@ -44,8 +44,8 @@ fn base62_encode() {
             "YM9YPkULukMzLdGYQGGQCIKrMiMXGAgamMQH",
         ),
     ];
-    for (code, data) in test_values {
-        let result = encode(&code);
-        assert_eq!(result, Some(data.to_string()));
+    for (data, code) in test_values {
+        let result = encode(&data);
+        assert_eq!(result, Some(code.to_string()));
     }
 }

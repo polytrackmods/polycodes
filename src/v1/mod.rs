@@ -2,7 +2,7 @@
 #[cfg(test)]
 mod tests;
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use facet::Facet;
 
@@ -23,7 +23,7 @@ pub struct Track {
 #[derive(Debug, Facet, PartialEq, Eq)]
 pub struct JsonTrackInfo {
     pub version: u32,
-    pub parts: HashMap<String, Vec<i32>>,
+    pub parts: BTreeMap<String, Vec<i32>>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -56,7 +56,7 @@ pub fn decode_track_code(track_code: &str) -> Option<Track> {
             .parts
             .into_iter()
             .map(|(id, blocks)| Part {
-                id: id.parse().unwrap_or(0),
+                id: id.parse().unwrap_or_default(),
                 blocks: blocks
                     .chunks_exact(4)
                     .map(|block| Block {
@@ -75,4 +75,33 @@ pub fn decode_track_code(track_code: &str) -> Option<Track> {
         name: json_track.name,
         track: track_info,
     })
+}
+
+#[must_use]
+pub fn encode_track_code(track: Track) -> String {
+    let parts = track
+        .track
+        .parts
+        .into_iter()
+        .map(|p| {
+            format!(
+                r#""{}":[{}]"#,
+                p.id,
+                p.blocks
+                    .into_iter()
+                    .flat_map(|b| vec![b.x, b.y, b.z, b.rot.into()])
+                    .map(|n| n.to_string())
+                    .collect::<Vec<_>>()
+                    .join(",")
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    let json_track_info = format!(r#"{{"version":{},"parts":{{{}}}}}"#, track.version, parts);
+    let json_track = JsonTrack {
+        version: track.version,
+        name: track.name,
+        track: json_track_info,
+    };
+    facet_json::to_string(&json_track)
 }

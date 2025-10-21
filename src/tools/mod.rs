@@ -2,9 +2,16 @@
 #[cfg(test)]
 mod tests;
 
+pub mod prelude {
+    pub use super::{read::*, write::*, Track};
+}
+
 use std::io::Read as _;
 
-use flate2::read::ZlibDecoder;
+use flate2::{
+    Compression,
+    read::{ZlibDecoder, ZlibEncoder},
+};
 
 const ENCODE_VALUES: [char; 62] = [
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
@@ -134,6 +141,14 @@ pub fn decompress(data: &[u8]) -> Option<Vec<u8>> {
 }
 
 #[must_use]
+pub fn compress(data: &[u8]) -> Option<Vec<u8>> {
+    let mut encoder = ZlibEncoder::new(data, Compression::best());
+    let mut compressed_data = Vec::new();
+    encoder.read_to_end(&mut compressed_data).ok()?;
+    Some(compressed_data)
+}
+
+#[must_use]
 pub fn hash_vec(track_data: Vec<u8>) -> String {
     sha256::digest(track_data)
 }
@@ -178,5 +193,30 @@ pub(crate) mod read {
         );
         *offset += 4;
         res
+    }
+}
+
+pub(crate) mod write {
+    #[inline]
+    pub fn write_u8(data: &mut Vec<u8>, value: u32) {
+        data.push((value & 0xFF) as u8);
+    }
+    #[inline]
+    pub fn write_u16(data: &mut Vec<u8>, value: u32) {
+        data.push((value & 0xFF) as u8);
+        data.push((value >> 8 & 0xFF) as u8);
+    }
+    #[inline]
+    pub fn write_u24(data: &mut Vec<u8>, value: u32) {
+        data.push((value & 0xFF) as u8);
+        data.push((value >> 8 & 0xFF) as u8);
+        data.push((value >> 16 & 0xFF) as u8);
+    }
+    #[inline]
+    pub fn write_u32(data: &mut Vec<u8>, value: u32) {
+        data.push((value & 0xFF) as u8);
+        data.push((value >> 8 & 0xFF) as u8);
+        data.push((value >> 16 & 0xFF) as u8);
+        data.push((value >> 24 & 0xFF) as u8);
     }
 }

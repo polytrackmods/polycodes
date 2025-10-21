@@ -6,7 +6,7 @@ use std::fmt::Display;
 
 use num_enum::TryFromPrimitive;
 
-use crate::tools::{self, Track, hash_vec, read::*};
+use crate::tools::{self, hash_vec, prelude::*};
 
 pub const CP_IDS: [u8; 4] = [52, 65, 75, 77];
 pub const START_IDS: [u8; 4] = [5, 91, 92, 93];
@@ -54,7 +54,7 @@ pub struct Block {
     pub start_order: Option<u32>,
 }
 
-#[derive(TryFromPrimitive, Debug, PartialEq, Eq)]
+#[derive(TryFromPrimitive, Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(u8)]
 pub enum Direction {
     YPos,
@@ -102,6 +102,41 @@ pub fn decode_track_code(track_code: &str) -> Option<Track> {
 }
 
 #[must_use]
+/// Encodes the given track struct into a track code.
+/// Returns [`None`] if something failed in the process.
+///
+/// Output might differ slightly from Polytrack's output
+/// because of Zlib shenanigans, but is still compatible.
+pub fn encode_track_code(track: Track) -> Option<String> {
+    let mut data: Vec<u8> = Vec::new();
+
+    let mut name = track.name.as_bytes().to_vec();
+    data.push(name.len().try_into().ok()?);
+    data.append(&mut name);
+
+    if let Some(author) = track.author {
+        let mut author = author.as_bytes().to_vec();
+        data.push(author.len().try_into().ok()?);
+        data.append(&mut author);
+    } else {
+        data.push(0);
+    }
+
+    data.append(&mut track.track_data.clone());
+
+    // (compress using zlib and then base64-encode) x2
+    let step1 = tools::compress(&data)?;
+    let step2_str = tools::encode(&step1)?;
+    let step2 = step2_str.as_bytes();
+    let step3 = tools::compress(step2)?;
+    let step4 = tools::encode(&step3)?;
+
+    // prepend the "PolyTrack1"
+    let track_code = String::from("PolyTrack1") + &step4;
+    Some(track_code)
+}
+
+#[must_use]
 /// Decodes the (raw binary) track data into a struct
 /// representing everything that is in the data.
 ///
@@ -114,9 +149,9 @@ pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
     let env = Environment::try_from(read_u8(data, &mut offset)?).ok()?;
     let sun_dir = read_u8(data, &mut offset)?;
 
-    let min_x = read_u32(data, &mut offset)? as i32;
-    let min_y = read_u32(data, &mut offset)? as i32;
-    let min_z = read_u32(data, &mut offset)? as i32;
+    let min_x = read_u32(data, &mut offset)?.cast_signed();
+    let min_y = read_u32(data, &mut offset)?.cast_signed();
+    let min_z = read_u32(data, &mut offset)?.cast_signed();
 
     let data_bytes = read_u8(data, &mut offset)?;
     let x_bytes = data_bytes & 3;
@@ -197,6 +232,60 @@ pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
         data_bytes,
         parts,
     })
+}
+
+#[must_use]
+/// Encodes the `TrackInfo` struct into raw binary data.
+pub fn encode_track_data(track_info: TrackInfo) -> Option<Vec<u8>> {
+    let mut data = Vec::new();
+
+    data.push(track_info.env as u8);
+    data.push(track_info.sun_dir);
+    write_u32(&mut data, track_info.min_x.cast_unsigned());
+    write_u32(&mut data, track_info.min_y.cast_unsigned());
+    write_u32(&mut data, track_info.min_z.cast_unsigned());
+    data.push(track_info.data_bytes);
+    let x_bytes = track_info.data_bytes & 3;
+    let y_bytes = (track_info.data_bytes >> 2) & 3;
+    let z_bytes = (track_info.data_bytes >> 4) & 3;
+    for part in &track_info.parts {
+        data.push(part.id);
+        write_u32(&mut data, part.amount);
+        for block in &part.blocks {
+            match x_bytes {
+                1 => write_u8(&mut data, block.x),
+                2 => write_u16(&mut data, block.x),
+                3 => write_u24(&mut data, block.x),
+                4 => write_u32(&mut data, block.x),
+                _ => {}
+            }
+            match y_bytes {
+                1 => write_u8(&mut data, block.y),
+                2 => write_u16(&mut data, block.y),
+                3 => write_u24(&mut data, block.y),
+                4 => write_u32(&mut data, block.y),
+                _ => {}
+            }
+            match z_bytes {
+                1 => write_u8(&mut data, block.z),
+                2 => write_u16(&mut data, block.z),
+                3 => write_u24(&mut data, block.z),
+                4 => write_u32(&mut data, block.z),
+                _ => {}
+            }
+            data.push(block.rotation);
+            data.push(block.dir as u8);
+            data.push(block.color);
+            if let Some(cp_order) = block.cp_order {
+                write_u16(&mut data, cp_order.into());
+            }
+            if let Some(start_order) = block.start_order {
+                write_u32(&mut data, start_order);
+            }
+        }
+    }
+
+    Some(data)
 }
 
 #[must_use]

@@ -60,6 +60,47 @@ fn track_decode() {
 }
 
 #[test]
+fn track_encode() {
+    let test_values = [
+        (
+            Track {
+                author: None,
+                name: "Ireozar".to_string(),
+                track_data: vec![
+                    5, 0, 1, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 128, 0, 0, 0, 3, 0, 0, 0, 252, 255,
+                    127, 0, 0, 0, 16, 0, 128, 0, 254, 255, 127, 0, 0, 0, 255, 255, 127, 0, 254,
+                    255, 127, 0, 0, 0, 2, 0, 128, 1, 15, 0, 3, 0, 0, 0, 1, 0, 128, 0, 0, 0, 255,
+                    255, 127, 1, 0, 0, 128, 0, 0, 0, 6, 0, 128, 1, 254, 255, 127, 5, 0, 0, 2, 0,
+                    128, 1, 28, 0, 1, 0, 0, 0, 253, 255, 127, 7, 0, 0, 0, 0, 128, 1,
+                ],
+            },
+            "v2HAJJXZvpXYyB4p9YlBGZAEoB4kMDEfPff6BSKAQefPwsefAJhwiJGagReDWNMCW1AlhRI6jNgyAUNsCRNyA2cf3fvesD2cZEAAsExCkA",
+        ),
+        (
+            Track {
+                author: None,
+                name: "Testing".to_string(),
+                track_data: vec![
+                    5, 0, 1, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 128, 0, 0, 0, 3, 0, 0, 0, 252, 255,
+                    127, 0, 0, 0, 16, 0, 128, 0, 254, 255, 127, 0, 0, 0, 255, 255, 127, 0, 254,
+                    255, 127, 0, 0, 0, 2, 0, 128, 1, 15, 0, 3, 0, 0, 0, 1, 0, 128, 0, 0, 0, 255,
+                    255, 127, 1, 0, 0, 128, 0, 0, 0, 6, 0, 128, 1, 254, 255, 127, 5, 0, 0, 2, 0,
+                    128, 1, 28, 0, 1, 0, 0, 0, 253, 255, 127, 7, 0, 0, 0, 0, 128, 1, 77, 0, 2, 0,
+                    0, 0, 254, 255, 127, 7, 0, 0, 0, 0, 128, 1, 0, 0, 242, 255, 127, 7, 0, 0, 8, 0,
+                    128, 1, 1, 0, 76, 0, 1, 0, 0, 0, 1, 0, 128, 7, 0, 0, 0, 0, 128, 1, 75, 0, 1, 0,
+                    0, 0, 0, 0, 128, 7, 0, 0, 4, 0, 128, 1, 2, 0,
+                ],
+            },
+            "v2HAUV2c0lmbnB4pdPOFkDACCDrDF1b6DwfI13E8m9s6sUQXCNtrdNEhhykfjd8d5JiLUfRMnYlFQ2mVGTppjVvbgOMTsmZV9e2TjqX7gbRpjmG4U8JyNsr0sxm723vi6eUHwLgsu9DmA",
+        ),
+    ];
+    for (track, code) in test_values {
+        let result = encode_track_code(&track);
+        assert_eq!(result, Some(code.to_string()));
+    }
+}
+
+#[test]
 fn data_decode() {
     let test_values = [(
         vec![
@@ -73,15 +114,13 @@ fn data_decode() {
                 Part {
                     id: 0,
                     amount: 1,
-                    blocks: vec![
-                        Block {
-                            x:-1,
-                            y:0,
-                            z:0,
-                            rotation:0,
-                            cp_order:None,
-                        }
-                    ],
+                    blocks: vec![Block {
+                        x: -1,
+                        y: 0,
+                        z: 0,
+                        rotation: 0,
+                        cp_order: None,
+                    }],
                 },
                 Part {
                     id: 41,
@@ -131,5 +170,78 @@ fn data_decode() {
     for (data, track_data) in test_values {
         let result = decode_track_data(&data);
         assert_eq!(result, Some(track_data));
+    }
+}
+
+#[test]
+fn data_encode() {
+    let test_values = [(
+        TrackInfo {
+            parts: vec![
+                Part {
+                    id: 0,
+                    amount: 1,
+                    blocks: vec![Block {
+                        x: -1,
+                        y: 0,
+                        z: 0,
+                        rotation: 0,
+                        cp_order: None,
+                    }],
+                },
+                Part {
+                    id: 41,
+                    amount: 2,
+                    blocks: vec![
+                        Block {
+                            x: 0,
+                            y: 0,
+                            z: -1,
+                            rotation: 0,
+                            cp_order: None,
+                        },
+                        Block {
+                            x: 2,
+                            y: 0,
+                            z: 0,
+                            rotation: 1,
+                            cp_order: None,
+                        },
+                    ],
+                },
+                Part {
+                    id: 5,
+                    amount: 1,
+                    blocks: vec![Block {
+                        x: -2,
+                        y: 0,
+                        z: 0,
+                        rotation: 1,
+                        cp_order: None,
+                    }],
+                },
+                Part {
+                    id: 43,
+                    amount: 1,
+                    blocks: vec![Block {
+                        x: -1,
+                        y: 3,
+                        z: 1,
+                        rotation: 1,
+                        cp_order: None,
+                    }],
+                },
+            ],
+        },
+        vec![
+            0, 0, 1, 0, 0, 0, 255, 255, 127, 0, 0, 0, 0, 0, 128, 0, 41, 0, 2, 0, 0, 0, 0, 0, 128,
+            0, 0, 0, 255, 255, 127, 0, 2, 0, 128, 0, 0, 0, 0, 0, 128, 1, 5, 0, 1, 0, 0, 0, 254,
+            255, 127, 0, 0, 0, 0, 0, 128, 1, 43, 0, 1, 0, 0, 0, 255, 255, 127, 3, 0, 0, 1, 0, 128,
+            1,
+        ],
+    )];
+    for (track_data, data) in test_values {
+        let result = encode_track_data(&track_data);
+        assert_eq!(result, Some(data));
     }
 }

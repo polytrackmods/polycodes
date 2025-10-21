@@ -2,7 +2,7 @@
 #[cfg(test)]
 mod tests;
 
-use crate::tools::{Track, read::*};
+use crate::tools::prelude::*;
 use base64::prelude::*;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -32,6 +32,11 @@ fn decode(input: &str) -> Option<Vec<u8>> {
     Some(base64_decoded)
 }
 
+fn encode(input: &[u8]) -> String {
+    let base64_encoded = BASE64_STANDARD_NO_PAD.encode(input);
+    base64_encoded.replace('+', "-").replace('/', "_")
+}
+
 #[must_use]
 pub fn decode_track_code(track_code: &str) -> Option<Track> {
     let track_code = track_code.get(3..)?;
@@ -44,6 +49,22 @@ pub fn decode_track_code(track_code: &str) -> Option<Track> {
         author: None,
         track_data,
     })
+}
+
+#[must_use]
+/// Encodes the given track struct into a track code.
+/// Returns [`None`] if something failed in the process.
+///
+/// Output might differ slightly from Polytrack's output
+/// because of Zlib shenanigans, but is still compatible.
+pub fn encode_track_code(track: &Track) -> Option<String> {
+    let track_data = encode(&track.track_data);
+
+    let metadata = encode(&[(track.name.len()) as u8]);
+
+    // prepend the "v1n"
+    let track_code = String::from("v1n") + &metadata + &track.name + &track_data;
+    Some(track_code)
 }
 
 #[must_use]
@@ -68,4 +89,22 @@ pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
     }
 
     Some(TrackInfo { parts })
+}
+
+#[must_use]
+/// Encodes the `TrackInfo` struct into raw binary data.
+pub fn encode_track_data(track_info: &TrackInfo) -> Option<Vec<u8>> {
+    let mut data = Vec::new();
+    for part in &track_info.parts {
+        write_u16(&mut data, part.id.into());
+        write_u32(&mut data, part.amount);
+        for block in &part.blocks {
+            write_u24(&mut data, (block.x + i32::pow(2, 23)).cast_unsigned());
+            write_u24(&mut data, block.y.cast_unsigned());
+            write_u24(&mut data, (block.z + i32::pow(2, 23)).cast_unsigned());
+            data.push(block.rotation);
+        }
+    }
+
+    Some(data)
 }
