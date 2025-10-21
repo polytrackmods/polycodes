@@ -172,13 +172,13 @@ pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
             offset += x_bytes as usize;
 
             let mut y = 0;
-            for i in 0..x_bytes {
+            for i in 0..y_bytes {
                 y |= u32::from(*data.get(offset + (i as usize))?) << (8 * i);
             }
             offset += y_bytes as usize;
 
             let mut z = 0;
-            for i in 0..x_bytes {
+            for i in 0..z_bytes {
                 z |= u32::from(*data.get(offset + (i as usize))?) << (8 * i);
             }
             offset += z_bytes as usize;
