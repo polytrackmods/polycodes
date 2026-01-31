@@ -103,5 +103,5 @@ pub fn encode_track_code(track: Track) -> String {
         name: track.name,
         track: json_track_info,
     };
-    facet_json::to_string(&json_track)
+    facet_json::to_string(&json_track).expect("should never fail")
 }
