@@ -153,7 +153,7 @@ pub fn hash_vec(track_data: Vec<u8>) -> String {
     sha256::digest(track_data)
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Track {
     pub name: String,
     pub author: Option<String>,
