@@ -11,7 +11,7 @@ use crate::tools::{self, hash_vec, prelude::*};
 pub const CP_IDS: [u8; 4] = [52, 65, 75, 77];
 pub const START_IDS: [u8; 4] = [5, 91, 92, 93];
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TrackInfo {
     pub env: Environment,
     pub sun_dir: u8,
@@ -24,7 +24,7 @@ pub struct TrackInfo {
     pub parts: Vec<Part>,
 }
 
-#[derive(TryFromPrimitive, Debug, PartialEq, Eq)]
+#[derive(TryFromPrimitive, Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(u8)]
 pub enum Environment {
     Summer,
@@ -32,14 +32,14 @@ pub enum Environment {
     Desert,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Part {
     pub id: u8,
     pub amount: u32,
     pub blocks: Vec<Block>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Block {
     pub x: u32,
     pub y: u32,

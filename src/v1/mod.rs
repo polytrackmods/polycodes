@@ -13,7 +13,7 @@ struct JsonTrack {
     track: String,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Track {
     pub version: u32,
     pub name: String,
@@ -21,24 +21,24 @@ pub struct Track {
 }
 
 #[derive(Debug, Facet, PartialEq, Eq)]
-pub struct JsonTrackInfo {
+struct JsonTrackInfo {
     pub version: u32,
     pub parts: BTreeMap<String, Vec<i32>>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct TrackInfo {
     pub version: u32,
     pub parts: Vec<Part>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Part {
     pub id: u32,
     pub blocks: Vec<Block>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Block {
     pub x: i32,
     pub y: i32,
