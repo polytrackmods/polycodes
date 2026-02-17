@@ -45,7 +45,6 @@ pub struct Block {
     pub y: u32,
     pub z: u32,
 
-    // why arent these combined into a single byte :( (literally takes up 5 bits in a span of 16 bits now)
     pub rotation: u8,
     pub dir: Direction,
 
@@ -69,7 +68,7 @@ pub enum Direction {
 /// Decodes the given track code and yields a struct containing the track name, track author, and the (raw binary) track data.
 /// Returns [`None`] if something failed in the process.
 pub fn decode_track_code(track_code: &str) -> Option<Track> {
-    // only use the actual data, skipping the "PolyTrack1"
+    // only use the actual data, skipping the "PolyTrack2"
     let track_code = track_code.get(10..)?;
     // ZLIB header 0x78DA is always encoded to `4p` and other stuff
     let td_start = track_code.find("4p")?;
@@ -83,21 +82,39 @@ pub fn decode_track_code(track_code: &str) -> Option<Track> {
     let step4 = tools::decompress(&step3)?;
 
     let name_len = *step4.first()? as usize;
-    let author_len = *step4.get(1 + name_len)? as usize;
-
     let name = String::from_utf8(step4.get(1..=name_len)?.to_vec()).ok()?;
+
+    let author_len = *step4.get(1 + name_len)? as usize;
     let author = String::from_utf8(
         step4
             .get((name_len + 2)..(name_len + author_len + 2))?
             .to_vec(),
     )
     .ok();
-    let track_data = step4.get((name_len + author_len + 2)..)?.to_vec();
+
+    let lastmod_exists = *step4.get(2 + name_len + author_len)? as usize;
+    if lastmod_exists > 1 {
+        return None;
+    }
+    let last_modified = if lastmod_exists == 1 {
+        let pos = 3 + name_len + author_len;
+        Some(
+            u32::from(*step4.get(pos)?)
+                | u32::from(*step4.get(pos + 1)?) << 8
+                | u32::from(*step4.get(pos + 2)?) << 16
+                | u32::from(*step4.get(pos + 3)?) << 24,
+        )
+    } else {
+        None
+    };
+    let track_data = step4
+        .get((name_len + author_len + 3 + if last_modified.is_some() { 4 } else { 0 })..)?
+        .to_vec();
 
     Some(Track {
         name,
         author,
-        last_modified: None,
+        last_modified,
         track_data,
     })
 }
@@ -123,6 +140,13 @@ pub fn encode_track_code(track: &Track) -> Option<String> {
         data.push(0);
     }
 
+    if let Some(last_modified) = track.last_modified {
+        data.push(1);
+        data.append(&mut last_modified.to_le_bytes().to_vec());
+    } else {
+        data.push(0);
+    }
+
     data.append(&mut track.track_data.clone());
 
     // (compress using zlib and then base64-encode) x2
@@ -132,8 +156,8 @@ pub fn encode_track_code(track: &Track) -> Option<String> {
     let step3 = tools::compress_final(step2)?;
     let step4 = tools::encode(&step3)?;
 
-    // prepend the "PolyTrack1"
-    let track_code = String::from("PolyTrack1") + &step4;
+    // prepend the "PolyTrack2"
+    let track_code = String::from("PolyTrack2") + &step4;
     Some(track_code)
 }
 
@@ -184,11 +208,12 @@ pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
             }
             offset += z_bytes as usize;
 
-            let rotation = read_u8(data, &mut offset)?;
+            let rot_dir = read_u8(data, &mut offset)?;
+            let rotation = rot_dir & 3;
             if rotation > 3 {
                 return None;
             }
-            let dir = Direction::try_from(read_u8(data, &mut offset)?).ok()?;
+            let dir = Direction::try_from((rot_dir >> 2) & 7).ok()?;
             let color = read_u8(data, &mut offset)?;
             // no custom color support for now
             if color > 3 && color < 32 && color > 40 {
@@ -274,8 +299,7 @@ pub fn encode_track_data(track_info: &TrackInfo) -> Option<Vec<u8>> {
                 4 => write_u32(&mut data, block.z),
                 _ => {}
             }
-            data.push(block.rotation);
-            data.push(block.dir as u8);
+            data.push(block.rotation & 3 | (block.dir as u8 & 7) << 2);
             data.push(block.color);
             if let Some(cp_order) = block.cp_order {
                 write_u16(&mut data, cp_order.into());

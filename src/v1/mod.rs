@@ -78,6 +78,7 @@ pub fn decode_track_code(track_code: &str) -> Option<Track> {
 }
 
 #[must_use]
+#[allow(clippy::missing_panics_doc)]
 pub fn encode_track_code(track: Track) -> String {
     let parts = track
         .track

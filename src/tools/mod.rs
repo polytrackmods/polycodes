@@ -3,15 +3,12 @@
 mod tests;
 
 pub mod prelude {
-    pub use super::{read::*, write::*, Track};
+    pub use super::{Track, read::*, write::*};
 }
 
 use std::io::Read as _;
 
-use flate2::{
-    Compression,
-    read::{ZlibDecoder, ZlibEncoder},
-};
+use flate2::{Compression, FlushCompress, read::ZlibDecoder};
 
 const ENCODE_VALUES: [char; 62] = [
     'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
@@ -141,10 +138,26 @@ pub fn decompress(data: &[u8]) -> Option<Vec<u8>> {
 }
 
 #[must_use]
-pub fn compress(data: &[u8]) -> Option<Vec<u8>> {
-    let mut encoder = ZlibEncoder::new(data, Compression::best());
+pub fn compress_first(data: &[u8]) -> Option<Vec<u8>> {
+    let mut compressor = flate2::Compress::new_with_window_bits(Compression::best(), true, 9);
     let mut compressed_data = Vec::new();
-    encoder.read_to_end(&mut compressed_data).ok()?;
+    let mut buffer = [0u8; 4096];
+    compressor
+        .compress(data, &mut buffer, FlushCompress::Finish)
+        .ok()?;
+    compressed_data.extend_from_slice(&buffer[..compressor.total_out() as usize]);
+    Some(compressed_data)
+}
+
+#[must_use]
+pub fn compress_final(data: &[u8]) -> Option<Vec<u8>> {
+    let mut compressor = flate2::Compress::new_with_window_bits(Compression::best(), true, 15);
+    let mut compressed_data = Vec::new();
+    let mut buffer = [0u8; 4096];
+    compressor
+        .compress(data, &mut buffer, FlushCompress::Finish)
+        .ok()?;
+    compressed_data.extend_from_slice(&buffer[..compressor.total_out() as usize]);
     Some(compressed_data)
 }
 
@@ -157,6 +170,7 @@ pub fn hash_vec(track_data: Vec<u8>) -> String {
 pub struct Track {
     pub name: String,
     pub author: Option<String>,
+    pub last_modified: Option<u32>,
     pub track_data: Vec<u8>,
 }
 

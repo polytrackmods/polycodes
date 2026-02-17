@@ -26,6 +26,7 @@ fn track_decode() {
             Track {
                 author: None,
                 name: "Ireozar".to_string(),
+                last_modified: None,
                 track_data: vec![
                     5, 0, 1, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 128, 0, 0, 0, 1, 0, 0, 0, 255, 255,
                     127, 0, 0, 0, 0, 0, 128, 1, 36, 0, 2, 0, 0, 0, 0, 0, 128, 0, 0, 0, 255, 255,
@@ -40,6 +41,7 @@ fn track_decode() {
             Track {
                 author: None,
                 name: "Testing".to_string(),
+                last_modified: None,
                 track_data: vec![
                     5, 0, 1, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 128, 0, 0, 0, 1, 0, 0, 0, 255, 255,
                     127, 0, 0, 0, 0, 0, 128, 1, 36, 0, 1, 0, 0, 0, 0, 0, 128, 2, 0, 0, 4, 0, 128,
@@ -63,6 +65,7 @@ fn track_encode() {
             Track {
                 author: None,
                 name: "Ireozar".to_string(),
+                last_modified: None,
                 track_data: vec![
                     5, 0, 1, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 128, 0, 0, 0, 1, 0, 0, 0, 255, 255,
                     127, 0, 0, 0, 0, 0, 128, 1, 36, 0, 2, 0, 0, 0, 0, 0, 128, 0, 0, 0, 255, 255,
@@ -77,6 +80,7 @@ fn track_encode() {
             Track {
                 author: None,
                 name: "Testing".to_string(),
+                last_modified: None,
                 track_data: vec![
                     5, 0, 1, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 128, 0, 0, 0, 1, 0, 0, 0, 255, 255,
                     127, 0, 0, 0, 0, 0, 128, 1, 36, 0, 1, 0, 0, 0, 0, 0, 128, 2, 0, 0, 4, 0, 128,

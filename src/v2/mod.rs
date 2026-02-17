@@ -47,6 +47,7 @@ pub fn decode_track_code(track_code: &str) -> Option<Track> {
     Some(Track {
         name,
         author: None,
+        last_modified: None,
         track_data,
     })
 }

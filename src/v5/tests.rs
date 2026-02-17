@@ -26,6 +26,7 @@ fn track_decode() {
             Track {
                 author: Some("".to_string()),
                 name: "Testing".to_string(),
+                last_modified: None,
                 track_data: vec![
                     0, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0,
@@ -37,6 +38,7 @@ fn track_decode() {
             Track {
                 author: Some("Ireozar".to_string()),
                 name: "lsdkghlkgsdgriugh".to_string(),
+                last_modified: None,
                 track_data: vec![
                     0, 28, 152, 255, 255, 255, 4, 0, 0, 0, 208, 255, 255, 255, 21, 5, 1, 0, 0, 0,
                     8, 0, 28, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 8, 0, 24, 0, 0, 0, 8, 0, 20, 0,
@@ -59,17 +61,19 @@ fn track_encode() {
             Track {
                 author: Some("".to_string()),
                 name: "Testing".to_string(),
+                last_modified: None,
                 track_data: vec![
                     0, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0,
                 ],
             },
-            "PolyTrack14p9MpALjMgsD1nSz23q8JF3jMQ3dPQn907i8NTfGh7OmeEz13A9AAw3JwQA",
+            "PolyTrack14p9i0XLjMgsD1nSz23q8JF3jMQ3dPQn907i8NTfGh7OmeEz13A9AAw30xwA",
         ),
         (
             Track {
                 author: Some("Ireozar".to_string()),
                 name: "lsdkghlkgsdgriugh".to_string(),
+                last_modified: None,
                 track_data: vec![
                     0, 28, 152, 255, 255, 255, 4, 0, 0, 0, 208, 255, 255, 255, 21, 5, 1, 0, 0, 0,
                     8, 0, 28, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 8, 0, 24, 0, 0, 0, 8, 0, 20, 0,
@@ -77,11 +81,11 @@ fn track_encode() {
                     0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 146, 1, 0, 0, 0, 12, 0, 12, 1, 0, 2,
                 ],
             },
-            "PolyTrack14pdDBHtCCCDFAA9XKwBhPe6Y72sdN0Nzu9WPozl5KIQo91bnj4TpiSRf6jHym0XfNRvb7NZbKJuIHdNTXfi7ITmGneXSjcY2CLD9D3VG7FuFxgk10tawfskdVgfvK21ehXvCZlEWcrKzzwJUM3hsEMjxEj7A9l0JQD",
+            "PolyTrack14pdDBHsDCCDDAA9XyEJxwxyyWt4KGYDx6NPAjBy8gJk4e1rvnwlaOF91nOkp0Hf9ieu93stpklj5orZ62LpjpMPO9XygSY2CrD9DP0k9q0iYQJGe9awfiScVgf3Kx1ep3sBZtCWdbaaJcGLm7QRB0YMJ4PwPuORa",
         ),
     ];
     for (track, code) in test_values {
-        let result = encode_track_code(track);
+        let result = encode_track_code(&track);
         assert_eq!(result, Some(code.to_string()));
     }
 }
@@ -353,7 +357,7 @@ fn data_encode() {
         ],
     )];
     for (track_data, data) in test_values {
-        let result = encode_track_data(track_data);
+        let result = encode_track_data(&track_data);
         assert_eq!(result, Some(data));
     }
 }

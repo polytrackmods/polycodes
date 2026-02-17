@@ -40,6 +40,7 @@ pub fn decode_track_code(track_code: &str) -> Option<Track> {
     Some(Track {
         name,
         author: None,
+        last_modified: None,
         track_data,
     })
 }
@@ -51,7 +52,7 @@ pub fn decode_track_code(track_code: &str) -> Option<Track> {
 /// Output might differ slightly from Polytrack's output
 /// because of Zlib shenanigans, but is still compatible.
 pub fn encode_track_code(track: &Track) -> Option<String> {
-    let track_data = tools::encode(&tools::compress(&track.track_data)?)?;
+    let track_data = tools::encode(&tools::compress_final(&track.track_data)?)?;
 
     let name_raw = track.name.as_bytes().to_vec();
     let name = tools::encode(&name_raw)?;
