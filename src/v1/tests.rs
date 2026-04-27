@@ -238,6 +238,6 @@ fn track_encode() {
     ];
     for (track, code) in test_values {
         let result = encode_track_code(track);
-        assert_eq!(result, code);
+        assert_eq!(result, Some(code.to_string()));
     }
 }

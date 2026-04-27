@@ -149,7 +149,7 @@ pub fn encode_track_code(track: &Track) -> Option<String> {
 
     data.append(&mut track.track_data.clone());
 
-    // (compress using zlib and then base64-encode) x2
+    // (compress using zlib and then base62-encode) x2
     let step1 = tools::compress_first(&data)?;
     let step2_str = tools::encode(&step1)?;
     let step2 = step2_str.as_bytes();

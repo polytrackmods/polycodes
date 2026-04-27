@@ -83,29 +83,29 @@ fn data_decode() {
             255, 127, 0, 0, 0, 0, 0, 128, 1, 43, 0, 1, 0, 0, 0, 255, 255, 127, 3, 0, 0, 1, 0, 128,
             1,
         ],
-        TrackInfo {
+        RawTrackInfo {
             parts: vec![
-                Part {
+                RawPart {
                     id: 0,
                     amount: 1,
-                    blocks: vec![Block {
+                    blocks: vec![RawBlock {
                         x: -1,
                         y: 0,
                         z: 0,
                         rotation: 0,
                     }],
                 },
-                Part {
+                RawPart {
                     id: 41,
                     amount: 2,
                     blocks: vec![
-                        Block {
+                        RawBlock {
                             x: 0,
                             y: 0,
                             z: -1,
                             rotation: 0,
                         },
-                        Block {
+                        RawBlock {
                             x: 2,
                             y: 0,
                             z: 0,
@@ -113,20 +113,20 @@ fn data_decode() {
                         },
                     ],
                 },
-                Part {
+                RawPart {
                     id: 5,
                     amount: 1,
-                    blocks: vec![Block {
+                    blocks: vec![RawBlock {
                         x: -2,
                         y: 0,
                         z: 0,
                         rotation: 1,
                     }],
                 },
-                Part {
+                RawPart {
                     id: 43,
                     amount: 1,
-                    blocks: vec![Block {
+                    blocks: vec![RawBlock {
                         x: -1,
                         y: 3,
                         z: 1,
@@ -145,29 +145,29 @@ fn data_decode() {
 #[test]
 fn data_encode() {
     let test_values = [(
-        TrackInfo {
+        RawTrackInfo {
             parts: vec![
-                Part {
+                RawPart {
                     id: 0,
                     amount: 1,
-                    blocks: vec![Block {
+                    blocks: vec![RawBlock {
                         x: -1,
                         y: 0,
                         z: 0,
                         rotation: 0,
                     }],
                 },
-                Part {
+                RawPart {
                     id: 41,
                     amount: 2,
                     blocks: vec![
-                        Block {
+                        RawBlock {
                             x: 0,
                             y: 0,
                             z: -1,
                             rotation: 0,
                         },
-                        Block {
+                        RawBlock {
                             x: 2,
                             y: 0,
                             z: 0,
@@ -175,20 +175,20 @@ fn data_encode() {
                         },
                     ],
                 },
-                Part {
+                RawPart {
                     id: 5,
                     amount: 1,
-                    blocks: vec![Block {
+                    blocks: vec![RawBlock {
                         x: -2,
                         y: 0,
                         z: 0,
                         rotation: 1,
                     }],
                 },
-                Part {
+                RawPart {
                     id: 43,
                     amount: 1,
-                    blocks: vec![Block {
+                    blocks: vec![RawBlock {
                         x: -1,
                         y: 3,
                         z: 1,

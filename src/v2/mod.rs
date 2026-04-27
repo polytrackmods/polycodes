@@ -6,23 +6,20 @@ use crate::tools::prelude::*;
 use base64::prelude::*;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct TrackInfo {
-    pub parts: Vec<Part>,
+pub struct RawTrackInfo {
+    pub parts: Vec<RawPart>,
 }
-
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Part {
+pub struct RawPart {
     pub id: u8,
     pub amount: u32,
-    pub blocks: Vec<Block>,
+    pub blocks: Vec<RawBlock>,
 }
-
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Block {
+pub struct RawBlock {
     pub x: i32,
     pub y: i32,
     pub z: i32,
-
     pub rotation: u8,
 }
 
@@ -69,7 +66,7 @@ pub fn encode_track_code(track: &Track) -> Option<String> {
 }
 
 #[must_use]
-pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
+pub fn decode_track_data(data: &[u8]) -> Option<RawTrackInfo> {
     let mut offset = 0;
     let mut parts = Vec::new();
     while offset < data.len() {
@@ -84,17 +81,17 @@ pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
 
             let rotation = read_u8(data, &mut offset)? & 3;
 
-            blocks.push(Block { x, y, z, rotation });
+            blocks.push(RawBlock { x, y, z, rotation });
         }
-        parts.push(Part { id, amount, blocks });
+        parts.push(RawPart { id, amount, blocks });
     }
 
-    Some(TrackInfo { parts })
+    Some(RawTrackInfo { parts })
 }
 
 #[must_use]
 /// Encodes the `TrackInfo` struct into raw binary data.
-pub fn encode_track_data(track_info: &TrackInfo) -> Option<Vec<u8>> {
+pub fn encode_track_data(track_info: &RawTrackInfo) -> Option<Vec<u8>> {
     let mut data = Vec::new();
     for part in &track_info.parts {
         write_u16(&mut data, part.id.into());

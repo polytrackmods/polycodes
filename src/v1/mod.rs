@@ -78,8 +78,7 @@ pub fn decode_track_code(track_code: &str) -> Option<Track> {
 }
 
 #[must_use]
-#[allow(clippy::missing_panics_doc)]
-pub fn encode_track_code(track: Track) -> String {
+pub fn encode_track_code(track: Track) -> Option<String> {
     let parts = track
         .track
         .parts
@@ -104,5 +103,5 @@ pub fn encode_track_code(track: Track) -> String {
         name: track.name,
         track: json_track_info,
     };
-    facet_json::to_string(&json_track).expect("should never fail")
+    facet_json::to_string(&json_track).ok()
 }

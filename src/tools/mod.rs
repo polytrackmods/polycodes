@@ -37,8 +37,8 @@ pub fn encode(input: &[u8]) -> Option<String> {
         let mut char_value = encode_chars(input, bit_pos)?;
         // if char_num ends with 11110, shorten it to 5 bits
         // (getting rid of value 62 and 63, which are too big for base62)
-        if (char_value & 30) == 30 {
-            char_value &= 31;
+        if (char_value & 0b11110) == 0b11110 {
+            char_value &= 0b11111;
             bit_pos += 5;
         } else {
             bit_pos += 6;
@@ -63,7 +63,11 @@ pub fn decode(input: &str) -> Option<Vec<u8>> {
             return None;
         }
         // 5 if char_value is 30 or 31, 6 otherwise (see encode for explanation)
-        let value_len = if (char_value & 30) == 30 { 5 } else { 6 };
+        let value_len = if (char_value & 0b11110) == 0b11110 {
+            5
+        } else {
+            6
+        };
         decode_chars(
             &mut bytes_out,
             out_pos,
@@ -139,26 +143,40 @@ pub fn decompress(data: &[u8]) -> Option<Vec<u8>> {
 
 #[must_use]
 pub fn compress_first(data: &[u8]) -> Option<Vec<u8>> {
-    let mut compressor = flate2::Compress::new_with_window_bits(Compression::best(), true, 9);
-    let mut compressed_data = Vec::new();
-    let mut buffer = [0u8; 4096];
-    compressor
-        .compress(data, &mut buffer, FlushCompress::Finish)
-        .ok()?;
-    compressed_data.extend_from_slice(&buffer[..compressor.total_out() as usize]);
-    Some(compressed_data)
+    deflate_with_window(data, 9)
 }
 
 #[must_use]
 pub fn compress_final(data: &[u8]) -> Option<Vec<u8>> {
-    let mut compressor = flate2::Compress::new_with_window_bits(Compression::best(), true, 15);
-    let mut compressed_data = Vec::new();
-    let mut buffer = [0u8; 4096];
-    compressor
-        .compress(data, &mut buffer, FlushCompress::Finish)
-        .ok()?;
-    compressed_data.extend_from_slice(&buffer[..compressor.total_out() as usize]);
-    Some(compressed_data)
+    deflate_with_window(data, 15)
+}
+
+fn deflate_with_window(input: &[u8], window_bits: u8) -> Option<Vec<u8>> {
+    let mut compressor =
+        flate2::Compress::new_with_window_bits(Compression::best(), true, window_bits);
+    let mut output = Vec::new();
+    let mut buffer = [0u8; 65536];
+    let mut input_offset = 0;
+    loop {
+        let before_in = compressor.total_in();
+        let before_out = compressor.total_out();
+        let flush = if input_offset >= input.len() {
+            FlushCompress::Finish
+        } else {
+            FlushCompress::None
+        };
+        let status = compressor
+            .compress(&input[input_offset..], &mut buffer, flush)
+            .ok()?;
+        let consumed = (compressor.total_in() - before_in) as usize;
+        let produced = (compressor.total_out() - before_out) as usize;
+        input_offset += consumed;
+        output.extend_from_slice(&buffer[..produced]);
+        if status == flate2::Status::StreamEnd {
+            break;
+        }
+    }
+    Some(output)
 }
 
 #[must_use]
