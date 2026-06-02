@@ -1,8 +1,7 @@
 [package]
 name = "polytrack-codes"
-version = "0.4.0-pre.1"
+version = "0.4.0-pre.2"
 edition = "2024"
-authors = ["Ireozar <ireo@ireo.xyz>", "GameBuilder202 <unkown.sr71@gmail.com>"]
 license = "MIT"
 description = "Collection of utilities to work with PolyTrack's track codes"
 repository = "https://codeberg.org/ireozar/polycodes"
@@ -17,4 +16,4 @@ num_enum = "0.7.5"
 sha256 = "1.6.0"
 
 [patch.crates-io]
-flate2 = { git = "https://codeberg.org/ireozar/flate2-rs_polytrack", branch = "main" }
+flate2 = { git = "https://codeberg.org/polytools/flate2-rs_polytrack", branch = "main" }
