@@ -1,4 +1,5 @@
 use super::*;
+use crate::{decode_track_data, encode_track_data, export_to_id};
 
 #[test]
 fn full_convert() {
@@ -13,7 +14,7 @@ fn full_convert() {
         ),
     ];
     for (code, id) in test_values {
-        let result = export_to_id(code);
+        let result = export_to_id::<V3Track>(code);
         assert_eq!(result, Some(id.to_string()));
     }
 }
@@ -23,26 +24,24 @@ fn track_decode() {
     let test_values = [
         (
             "v2HAJJXZvpXYyB4p9YlBGZAEoB4kMDEfPff6BSKAQefPwsefAJhwiJGagReDWNMCW1AlhRI6jNgyAUNsCRNyA2cf3fvesD2cZEAAsExCkA",
-            Track {
-                author: None,
-                name: "Ireozar".to_string(),
-                last_modified: None,
-                track_data: vec![
+            (
+                "Ireozar".to_string(),
+                (),
+                vec![
                     5, 0, 1, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 128, 0, 0, 0, 3, 0, 0, 0, 252, 255,
                     127, 0, 0, 0, 16, 0, 128, 0, 254, 255, 127, 0, 0, 0, 255, 255, 127, 0, 254,
                     255, 127, 0, 0, 0, 2, 0, 128, 1, 15, 0, 3, 0, 0, 0, 1, 0, 128, 0, 0, 0, 255,
                     255, 127, 1, 0, 0, 128, 0, 0, 0, 6, 0, 128, 1, 254, 255, 127, 5, 0, 0, 2, 0,
                     128, 1, 28, 0, 1, 0, 0, 0, 253, 255, 127, 7, 0, 0, 0, 0, 128, 1,
                 ],
-            },
+            ),
         ),
         (
             "v2HAUV2c0lmbnB4pdPOFkDACCDrDF1b6DwfI13E8m9s6sUQXCNtrdNEhhykfjd8d5JiLUfRMnYlFQ2mVGTppjVvbgOMTsmZV9e2TjqX7gbRpjmG4U8JyNsr0sxm723vi6eUHwLgsu9DmA",
-            Track {
-                author: None,
-                name: "Testing".to_string(),
-                last_modified: None,
-                track_data: vec![
+            (
+                "Testing".to_string(),
+                (),
+                vec![
                     5, 0, 1, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 128, 0, 0, 0, 3, 0, 0, 0, 252, 255,
                     127, 0, 0, 0, 16, 0, 128, 0, 254, 255, 127, 0, 0, 0, 255, 255, 127, 0, 254,
                     255, 127, 0, 0, 0, 2, 0, 128, 1, 15, 0, 3, 0, 0, 0, 1, 0, 128, 0, 0, 0, 255,
@@ -52,11 +51,11 @@ fn track_decode() {
                     128, 1, 1, 0, 76, 0, 1, 0, 0, 0, 1, 0, 128, 7, 0, 0, 0, 0, 128, 1, 75, 0, 1, 0,
                     0, 0, 0, 0, 128, 7, 0, 0, 4, 0, 128, 1, 2, 0,
                 ],
-            },
+            ),
         ),
     ];
     for (code, track) in test_values {
-        let result = decode_track_code(code);
+        let result = V3Track::decode_track_code(code);
         assert_eq!(result, Some(track));
     }
 }
@@ -65,26 +64,24 @@ fn track_decode() {
 fn track_encode() {
     let test_values = [
         (
-            Track {
-                author: None,
-                name: "Ireozar".to_string(),
-                last_modified: None,
-                track_data: vec![
+            (
+                "Ireozar".to_string(),
+                (),
+                vec![
                     5, 0, 1, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 128, 0, 0, 0, 3, 0, 0, 0, 252, 255,
                     127, 0, 0, 0, 16, 0, 128, 0, 254, 255, 127, 0, 0, 0, 255, 255, 127, 0, 254,
                     255, 127, 0, 0, 0, 2, 0, 128, 1, 15, 0, 3, 0, 0, 0, 1, 0, 128, 0, 0, 0, 255,
                     255, 127, 1, 0, 0, 128, 0, 0, 0, 6, 0, 128, 1, 254, 255, 127, 5, 0, 0, 2, 0,
                     128, 1, 28, 0, 1, 0, 0, 0, 253, 255, 127, 7, 0, 0, 0, 0, 128, 1,
                 ],
-            },
+            ),
             "v2HAJJXZvpXYyB4p9YlBGZAEoB4kMDEfPff6BSKAQefPwsefAJhwiJGagReDWNMCW1AlhRI6jNgyAUNsCRNyA2cf3fvesD2cZEAAsExCkA",
         ),
         (
-            Track {
-                author: None,
-                name: "Testing".to_string(),
-                last_modified: None,
-                track_data: vec![
+            (
+                "Testing".to_string(),
+                (),
+                vec![
                     5, 0, 1, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 128, 0, 0, 0, 3, 0, 0, 0, 252, 255,
                     127, 0, 0, 0, 16, 0, 128, 0, 254, 255, 127, 0, 0, 0, 255, 255, 127, 0, 254,
                     255, 127, 0, 0, 0, 2, 0, 128, 1, 15, 0, 3, 0, 0, 0, 1, 0, 128, 0, 0, 0, 255,
@@ -94,12 +91,12 @@ fn track_encode() {
                     128, 1, 1, 0, 76, 0, 1, 0, 0, 0, 1, 0, 128, 7, 0, 0, 0, 0, 128, 1, 75, 0, 1, 0,
                     0, 0, 0, 0, 128, 7, 0, 0, 4, 0, 128, 1, 2, 0,
                 ],
-            },
+            ),
             "v2HAUV2c0lmbnB4pdPOFkDACCDrDF1b6DwfI13E8m9s6sUQXCNtrdNEhhykfjd8d5JiLUfRMnYlFQ2mVGTppjVvbgOMTsmZV9e2TjqX7gbRpjmG4U8JyNsr0sxm723vi6eUHwLgsu9DmA",
         ),
     ];
-    for (track, code) in test_values {
-        let result = encode_track_code(&track);
+    for ((name, _, track_code), code) in test_values {
+        let result = V3Track::encode_track_code(name, (), &track_code);
         assert_eq!(result, Some(code.to_string()));
     }
 }
@@ -113,12 +110,12 @@ fn data_decode() {
             255, 127, 0, 0, 0, 0, 0, 128, 1, 43, 0, 1, 0, 0, 0, 255, 255, 127, 3, 0, 0, 1, 0, 128,
             1,
         ],
-        TrackInfo {
+        V3Track {
             parts: vec![
-                Part {
+                V3Part {
                     id: 0,
                     amount: 1,
-                    blocks: vec![Block {
+                    blocks: vec![V3Block {
                         x: -1,
                         y: 0,
                         z: 0,
@@ -126,18 +123,18 @@ fn data_decode() {
                         cp_order: None,
                     }],
                 },
-                Part {
+                V3Part {
                     id: 41,
                     amount: 2,
                     blocks: vec![
-                        Block {
+                        V3Block {
                             x: 0,
                             y: 0,
                             z: -1,
                             rotation: 0,
                             cp_order: None,
                         },
-                        Block {
+                        V3Block {
                             x: 2,
                             y: 0,
                             z: 0,
@@ -146,10 +143,10 @@ fn data_decode() {
                         },
                     ],
                 },
-                Part {
+                V3Part {
                     id: 5,
                     amount: 1,
-                    blocks: vec![Block {
+                    blocks: vec![V3Block {
                         x: -2,
                         y: 0,
                         z: 0,
@@ -157,10 +154,10 @@ fn data_decode() {
                         cp_order: None,
                     }],
                 },
-                Part {
+                V3Part {
                     id: 43,
                     amount: 1,
-                    blocks: vec![Block {
+                    blocks: vec![V3Block {
                         x: -1,
                         y: 3,
                         z: 1,
@@ -180,12 +177,12 @@ fn data_decode() {
 #[test]
 fn data_encode() {
     let test_values = [(
-        TrackInfo {
+        V3Track {
             parts: vec![
-                Part {
+                V3Part {
                     id: 0,
                     amount: 1,
-                    blocks: vec![Block {
+                    blocks: vec![V3Block {
                         x: -1,
                         y: 0,
                         z: 0,
@@ -193,18 +190,18 @@ fn data_encode() {
                         cp_order: None,
                     }],
                 },
-                Part {
+                V3Part {
                     id: 41,
                     amount: 2,
                     blocks: vec![
-                        Block {
+                        V3Block {
                             x: 0,
                             y: 0,
                             z: -1,
                             rotation: 0,
                             cp_order: None,
                         },
-                        Block {
+                        V3Block {
                             x: 2,
                             y: 0,
                             z: 0,
@@ -213,10 +210,10 @@ fn data_encode() {
                         },
                     ],
                 },
-                Part {
+                V3Part {
                     id: 5,
                     amount: 1,
-                    blocks: vec![Block {
+                    blocks: vec![V3Block {
                         x: -2,
                         y: 0,
                         z: 0,
@@ -224,10 +221,10 @@ fn data_encode() {
                         cp_order: None,
                     }],
                 },
-                Part {
+                V3Part {
                     id: 43,
                     amount: 1,
-                    blocks: vec![Block {
+                    blocks: vec![V3Block {
                         x: -1,
                         y: 3,
                         z: 1,
@@ -246,6 +243,6 @@ fn data_encode() {
     )];
     for (track_data, data) in test_values {
         let result = encode_track_data(&track_data);
-        assert_eq!(result, Some(data));
+        assert_eq!(result, data);
     }
 }

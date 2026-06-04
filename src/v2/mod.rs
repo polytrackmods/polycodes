@@ -2,25 +2,124 @@
 #[cfg(test)]
 mod tests;
 
-use crate::tools::prelude::*;
 use base64::prelude::*;
 
+use crate::tools::prelude::*;
+use crate::{Block, Part, Track};
+
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct RawTrackInfo {
-    pub parts: Vec<RawPart>,
+pub struct V2Track {
+    pub parts: Vec<V2Part>,
 }
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct RawPart {
+pub struct V2Part {
     pub id: u8,
     pub amount: u32,
-    pub blocks: Vec<RawBlock>,
+    pub blocks: Vec<V2Block>,
 }
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct RawBlock {
+pub struct V2Block {
     pub x: i32,
     pub y: i32,
     pub z: i32,
     pub rotation: u8,
+}
+
+impl Track for V2Track {
+    type Part = V2Part;
+
+    type Metadata = ();
+    fn meta(&self) -> Self::Metadata {}
+    fn parts(&self) -> Vec<Self::Part> {
+        self.parts.clone()
+    }
+
+    fn decode_meta(_: &[u8], _: &mut usize) -> Option<Self::Metadata> {
+        Some(())
+    }
+    fn encode_meta(&self, _: &mut Vec<u8>) {}
+    fn from_data(_: Self::Metadata, parts: Vec<Self::Part>) -> Self {
+        Self { parts }
+    }
+
+    type TrackInfo = ();
+    fn decode_track_code(track_code: &str) -> Option<(String, Self::TrackInfo, Vec<u8>)> {
+        let track_code = track_code.get(3..)?;
+        let metadata = decode(track_code.get(..2)?)?;
+        let name_len = *metadata.first()? as usize;
+        let name = track_code.get(2..2 + name_len)?.to_string();
+        let track_data = decode(track_code.get(2 + name_len..)?)?;
+
+        Some((name, (), track_data))
+    }
+    fn encode_track_code(name: String, _: Self::TrackInfo, track_data: &[u8]) -> Option<String> {
+        let track_data = encode(track_data);
+
+        let metadata = encode(&[(name.len()) as u8]);
+
+        // prepend the "v1n"
+        let track_code = String::from("v1n") + &metadata + &name + &track_data;
+        Some(track_code)
+    }
+}
+impl Part for V2Part {
+    type Block = V2Block;
+
+    fn id(&self) -> u8 {
+        self.id
+    }
+    fn amount(&self) -> u32 {
+        self.amount
+    }
+    fn blocks(&self) -> Vec<Self::Block> {
+        self.blocks.clone()
+    }
+    fn from_data(id: u8, amount: u32, blocks: Vec<Self::Block>) -> Self {
+        Self { id, amount, blocks }
+    }
+
+    fn decode_prelude(data: &[u8], offset: &mut usize) -> Option<(u8, u32)> {
+        Some((read_u16(data, offset)? as u8, read_u32(data, offset)?))
+    }
+    fn encode_prelude(&self, data: &mut Vec<u8>) {
+        write_u16(data, self.id.into());
+        write_u32(data, self.amount);
+    }
+}
+impl Block for V2Block {
+    type Track = V2Track;
+
+    type Extra = ();
+    fn extra_data(&self) -> Self::Extra {}
+
+    type Coord = i32;
+    fn pos(&self) -> (Self::Coord, Self::Coord, Self::Coord) {
+        (self.x, self.y, self.z)
+    }
+    fn rot(&self) -> u8 {
+        self.rotation
+    }
+
+    fn decode(
+        data: &[u8],
+        offset: &mut usize,
+        _: u8,
+        _: <Self::Track as Track>::Metadata,
+    ) -> Option<Self> {
+        let x = read_i24(data, offset)? - i32::pow(2, 23);
+        let y = read_i24(data, offset)?;
+        let z = read_i24(data, offset)? - i32::pow(2, 23);
+
+        let rotation = read_u8(data, offset)? & 3;
+
+        Some(Self { x, y, z, rotation })
+    }
+    fn encode(&self, data: &mut Vec<u8>, _: <Self::Track as Track>::Metadata) {
+        write_u24(data, (self.x + i32::pow(2, 23)).cast_unsigned());
+        write_u24(data, self.y.cast_unsigned());
+        write_u24(data, (self.z + i32::pow(2, 23)).cast_unsigned());
+        data.push(self.rotation);
+    }
 }
 
 fn decode(input: &str) -> Option<Vec<u8>> {
@@ -32,77 +131,4 @@ fn decode(input: &str) -> Option<Vec<u8>> {
 fn encode(input: &[u8]) -> String {
     let base64_encoded = BASE64_STANDARD_NO_PAD.encode(input);
     base64_encoded.replace('+', "-").replace('/', "_")
-}
-
-#[must_use]
-pub fn decode_track_code(track_code: &str) -> Option<Track> {
-    let track_code = track_code.get(3..)?;
-    let metadata = decode(track_code.get(..2)?)?;
-    let name_len = *metadata.first()? as usize;
-    let name = track_code.get(2..2 + name_len)?.to_string();
-    let track_data = decode(track_code.get(2 + name_len..)?)?;
-    Some(Track {
-        name,
-        author: None,
-        last_modified: None,
-        track_data,
-    })
-}
-
-#[must_use]
-/// Encodes the given track struct into a track code.
-/// Returns [`None`] if something failed in the process.
-///
-/// Output might differ slightly from Polytrack's output
-/// because of Zlib shenanigans, but is still compatible.
-pub fn encode_track_code(track: &Track) -> Option<String> {
-    let track_data = encode(&track.track_data);
-
-    let metadata = encode(&[(track.name.len()) as u8]);
-
-    // prepend the "v1n"
-    let track_code = String::from("v1n") + &metadata + &track.name + &track_data;
-    Some(track_code)
-}
-
-#[must_use]
-pub fn decode_track_data(data: &[u8]) -> Option<RawTrackInfo> {
-    let mut offset = 0;
-    let mut parts = Vec::new();
-    while offset < data.len() {
-        let id = read_u16(data, &mut offset)? as u8;
-        let amount = read_u32(data, &mut offset)?;
-
-        let mut blocks = Vec::new();
-        for _ in 0..amount {
-            let x = read_i24(data, &mut offset)? - i32::pow(2, 23);
-            let y = read_i24(data, &mut offset)?;
-            let z = read_i24(data, &mut offset)? - i32::pow(2, 23);
-
-            let rotation = read_u8(data, &mut offset)? & 3;
-
-            blocks.push(RawBlock { x, y, z, rotation });
-        }
-        parts.push(RawPart { id, amount, blocks });
-    }
-
-    Some(RawTrackInfo { parts })
-}
-
-#[must_use]
-/// Encodes the `TrackInfo` struct into raw binary data.
-pub fn encode_track_data(track_info: &RawTrackInfo) -> Option<Vec<u8>> {
-    let mut data = Vec::new();
-    for part in &track_info.parts {
-        write_u16(&mut data, part.id.into());
-        write_u32(&mut data, part.amount);
-        for block in &part.blocks {
-            write_u24(&mut data, (block.x + i32::pow(2, 23)).cast_unsigned());
-            write_u24(&mut data, block.y.cast_unsigned());
-            write_u24(&mut data, (block.z + i32::pow(2, 23)).cast_unsigned());
-            data.push(block.rotation);
-        }
-    }
-
-    Some(data)
 }

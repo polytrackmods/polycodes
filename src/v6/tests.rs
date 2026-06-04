@@ -1,4 +1,5 @@
 use super::*;
+use crate::{decode_track_data, encode_track_data, export_to_id};
 
 #[test]
 fn full_convert() {
@@ -13,7 +14,7 @@ fn full_convert() {
         ),
     ];
     for (code, id) in test_values {
-        let result = export_to_id(code);
+        let result = export_to_id::<V6Track>(code);
         assert_eq!(result, Some(id.to_string()));
     }
 }
@@ -23,33 +24,37 @@ fn track_decode() {
     let test_values = [
         (
             "PolyTrack24p9i0XLjMgsD1nSz23q8JF3jMdniKSH9K98LuSPrMZnCMxyCIQPAAgOBM0K",
-            Track {
-                author: Some("".to_string()),
-                name: "Testing".to_string(),
-                last_modified: None,
-                track_data: vec![
+            (
+                "Testing".to_string(),
+                V6TrackInfo {
+                    author: "".to_string(),
+                    last_modified: None,
+                },
+                vec![
                     0, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0,
                 ],
-            },
+            ),
         ),
         (
             "PolyTrack24pdFJHtDCCCFAA9Xqtcr8RueemB21WCWjeBIixocuJDf1Xde6xylEH9G1hdby4iZtoXveNfSbJb3v51tD3D2Oe8iqMqwMPN83zRo2WUJe5UAeAyeYtFI4sTSCaU6kvcf9huUuBRHMnIbTSXRs6mOj4xk0IE0VqnlfC0ePqYI",
-            Track {
-                author: Some("Ireozar".to_string()),
-                name: "lsdkghlkgsdgriugh".to_string(),
-                last_modified: Some(1770992675),
-                track_data: vec![
+            (
+                "lsdkghlkgsdgriugh".to_string(),
+                V6TrackInfo {
+                    author: "Ireozar".to_string(),
+                    last_modified: Some(1770992675),
+                },
+                vec![
                     0, 28, 152, 255, 255, 255, 4, 0, 0, 0, 208, 255, 255, 255, 21, 0, 5, 0, 0, 0,
                     8, 0, 4, 0, 0, 8, 0, 8, 0, 0, 8, 0, 16, 0, 0, 8, 0, 20, 0, 0, 8, 0, 24, 0, 0,
                     5, 1, 0, 0, 0, 8, 0, 28, 0, 0, 0, 0, 0, 0, 36, 2, 0, 0, 0, 0, 0, 20, 0, 0, 8,
                     0, 0, 0, 0, 146, 1, 0, 0, 0, 12, 0, 12, 1, 2,
                 ],
-            },
+            ),
         ),
     ];
     for (code, track) in test_values {
-        let result = decode_track_code(code);
+        let result = V6Track::decode_track_code(code);
         assert_eq!(result, Some(track));
     }
 }
@@ -58,34 +63,38 @@ fn track_decode() {
 fn track_encode() {
     let test_values = [
         (
-            Track {
-                author: Some("".to_string()),
-                name: "Testing".to_string(),
-                last_modified: None,
-                track_data: vec![
+            (
+                "Testing".to_string(),
+                V6TrackInfo {
+                    author: "".to_string(),
+                    last_modified: None,
+                },
+                vec![
                     0, 28, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 21, 5, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0,
                 ],
-            },
+            ),
             "PolyTrack24p9i0XLjMgsD1nSz23q8JF3jMdniKSH9K98LuSPrMZnCMxyCIQPAAgOBM0K",
         ),
         (
-            Track {
-                author: Some("Ireozar".to_string()),
-                name: "lsdkghlkgsdgriugh".to_string(),
-                last_modified: Some(1770992675),
-                track_data: vec![
+            (
+                "lsdkghlkgsdgriugh".to_string(),
+                V6TrackInfo {
+                    author: "Ireozar".to_string(),
+                    last_modified: Some(1770992675),
+                },
+                vec![
                     0, 28, 152, 255, 255, 255, 4, 0, 0, 0, 208, 255, 255, 255, 21, 0, 5, 0, 0, 0,
                     8, 0, 4, 0, 0, 8, 0, 8, 0, 0, 8, 0, 16, 0, 0, 8, 0, 20, 0, 0, 8, 0, 24, 0, 0,
                     5, 1, 0, 0, 0, 8, 0, 28, 0, 0, 0, 0, 0, 0, 36, 2, 0, 0, 0, 0, 0, 20, 0, 0, 8,
                     0, 0, 0, 0, 146, 1, 0, 0, 0, 12, 0, 12, 1, 2,
                 ],
-            },
+            ),
             "PolyTrack24pdFJHtDCCCFAA9Xqtcr8RueemB21WCWjeBIixocuJDf1Xde6xylEH9G1hdby4iZtoXveNfSbJb3v51tD3D2Oe8iqMqwMPN83zRo2WUJe5UAeAyeYtFI4sTSCaU6kvcf9huUuBRHMnIbTSXRs6mOj4xk0IE0VqnlfC0ePqYI",
         ),
     ];
-    for (track, code) in test_values {
-        let result = encode_track_code(&track);
+    for ((name, info, track_data), code) in test_values {
+        let result = V6Track::encode_track_code(name, info, &track_data);
         assert_eq!(result, Some(code.to_string()));
     }
 }
@@ -99,119 +108,121 @@ fn data_decode() {
             8, 0, 0, 8, 0, 4, 0, 0, 36, 2, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 20, 0, 0, 146, 1, 0, 0, 0,
             12, 0, 12, 1, 2,
         ],
-        TrackInfo {
-            env: Environment::Summer,
-            sun_dir: 28,
-            min_x: -104,
-            min_y: 4,
-            min_z: -48,
-            data_bytes: 21,
+        V6Track {
+            metadata: V6TrackMetadata {
+                env: V6Environment::Summer,
+                sun_dir: 28,
+                min_x: -104,
+                min_y: 4,
+                min_z: -48,
+                data_bytes: 21,
+            },
             parts: vec![
-                Part {
+                V6Part {
                     id: 5,
                     amount: 1,
-                    blocks: vec![Block {
+                    blocks: vec![V6Block {
                         x: 8,
                         y: 0,
                         z: 28,
                         rotation: 0,
-                        dir: Direction::YPos,
+                        dir: V6Direction::YPos,
                         color: 0,
                         cp_order: None,
                         start_order: Some(0),
                     }],
                 },
-                Part {
+                V6Part {
                     id: 0,
                     amount: 5,
                     blocks: vec![
-                        Block {
+                        V6Block {
                             x: 8,
                             y: 0,
                             z: 24,
                             rotation: 0,
-                            dir: Direction::YPos,
+                            dir: V6Direction::YPos,
                             color: 0,
                             cp_order: None,
                             start_order: None,
                         },
-                        Block {
+                        V6Block {
                             x: 8,
                             y: 0,
                             z: 20,
                             rotation: 0,
-                            dir: Direction::YPos,
+                            dir: V6Direction::YPos,
                             color: 0,
                             cp_order: None,
                             start_order: None,
                         },
-                        Block {
+                        V6Block {
                             x: 8,
                             y: 0,
                             z: 16,
                             rotation: 0,
-                            dir: Direction::YPos,
+                            dir: V6Direction::YPos,
                             color: 0,
                             cp_order: None,
                             start_order: None,
                         },
-                        Block {
+                        V6Block {
                             x: 8,
                             y: 0,
                             z: 8,
                             rotation: 0,
-                            dir: Direction::YPos,
+                            dir: V6Direction::YPos,
                             color: 0,
                             cp_order: None,
                             start_order: None,
                         },
-                        Block {
+                        V6Block {
                             x: 8,
                             y: 0,
                             z: 4,
                             rotation: 0,
-                            dir: Direction::YPos,
+                            dir: V6Direction::YPos,
                             color: 0,
                             cp_order: None,
                             start_order: None,
                         },
                     ],
                 },
-                Part {
+                V6Part {
                     id: 36,
                     amount: 2,
                     blocks: vec![
-                        Block {
+                        V6Block {
                             x: 8,
                             y: 0,
                             z: 0,
                             rotation: 0,
-                            dir: Direction::YPos,
+                            dir: V6Direction::YPos,
                             color: 0,
                             cp_order: None,
                             start_order: None,
                         },
-                        Block {
+                        V6Block {
                             x: 0,
                             y: 0,
                             z: 20,
                             rotation: 0,
-                            dir: Direction::YPos,
+                            dir: V6Direction::YPos,
                             color: 0,
                             cp_order: None,
                             start_order: None,
                         },
                     ],
                 },
-                Part {
+                V6Part {
                     id: 146,
                     amount: 1,
-                    blocks: vec![Block {
+                    blocks: vec![V6Block {
                         x: 12,
                         y: 0,
                         z: 12,
                         rotation: 1,
-                        dir: Direction::YPos,
+                        dir: V6Direction::YPos,
                         color: 2,
                         cp_order: None,
                         start_order: None,
@@ -229,119 +240,121 @@ fn data_decode() {
 #[test]
 fn data_encode() {
     let test_values = [(
-        TrackInfo {
-            env: Environment::Summer,
-            sun_dir: 28,
-            min_x: -104,
-            min_y: 4,
-            min_z: -48,
-            data_bytes: 21,
+        V6Track {
+            metadata: V6TrackMetadata {
+                env: V6Environment::Summer,
+                sun_dir: 28,
+                min_x: -104,
+                min_y: 4,
+                min_z: -48,
+                data_bytes: 21,
+            },
             parts: vec![
-                Part {
+                V6Part {
                     id: 5,
                     amount: 1,
-                    blocks: vec![Block {
+                    blocks: vec![V6Block {
                         x: 8,
                         y: 0,
                         z: 28,
                         rotation: 0,
-                        dir: Direction::YPos,
+                        dir: V6Direction::YPos,
                         color: 0,
                         cp_order: None,
                         start_order: Some(0),
                     }],
                 },
-                Part {
+                V6Part {
                     id: 0,
                     amount: 5,
                     blocks: vec![
-                        Block {
+                        V6Block {
                             x: 8,
                             y: 0,
                             z: 24,
                             rotation: 0,
-                            dir: Direction::YPos,
+                            dir: V6Direction::YPos,
                             color: 0,
                             cp_order: None,
                             start_order: None,
                         },
-                        Block {
+                        V6Block {
                             x: 8,
                             y: 0,
                             z: 20,
                             rotation: 0,
-                            dir: Direction::YPos,
+                            dir: V6Direction::YPos,
                             color: 0,
                             cp_order: None,
                             start_order: None,
                         },
-                        Block {
+                        V6Block {
                             x: 8,
                             y: 0,
                             z: 16,
                             rotation: 0,
-                            dir: Direction::YPos,
+                            dir: V6Direction::YPos,
                             color: 0,
                             cp_order: None,
                             start_order: None,
                         },
-                        Block {
+                        V6Block {
                             x: 8,
                             y: 0,
                             z: 8,
                             rotation: 0,
-                            dir: Direction::YPos,
+                            dir: V6Direction::YPos,
                             color: 0,
                             cp_order: None,
                             start_order: None,
                         },
-                        Block {
+                        V6Block {
                             x: 8,
                             y: 0,
                             z: 4,
                             rotation: 0,
-                            dir: Direction::YPos,
+                            dir: V6Direction::YPos,
                             color: 0,
                             cp_order: None,
                             start_order: None,
                         },
                     ],
                 },
-                Part {
+                V6Part {
                     id: 36,
                     amount: 2,
                     blocks: vec![
-                        Block {
+                        V6Block {
                             x: 8,
                             y: 0,
                             z: 0,
                             rotation: 0,
-                            dir: Direction::YPos,
+                            dir: V6Direction::YPos,
                             color: 0,
                             cp_order: None,
                             start_order: None,
                         },
-                        Block {
+                        V6Block {
                             x: 0,
                             y: 0,
                             z: 20,
                             rotation: 0,
-                            dir: Direction::YPos,
+                            dir: V6Direction::YPos,
                             color: 0,
                             cp_order: None,
                             start_order: None,
                         },
                     ],
                 },
-                Part {
+                V6Part {
                     id: 146,
                     amount: 1,
-                    blocks: vec![Block {
+                    blocks: vec![V6Block {
                         x: 12,
                         y: 0,
                         z: 12,
                         rotation: 1,
-                        dir: Direction::YPos,
+                        dir: V6Direction::YPos,
                         color: 2,
                         cp_order: None,
                         start_order: None,
@@ -358,6 +371,6 @@ fn data_encode() {
     )];
     for (track_data, data) in test_values {
         let result = encode_track_data(&track_data);
-        assert_eq!(result, Some(data));
+        assert_eq!(result, data);
     }
 }

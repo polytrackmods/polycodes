@@ -3,7 +3,7 @@
 mod tests;
 
 pub mod prelude {
-    pub use super::{Track, read::*, write::*};
+    pub use super::{read::*, write::*};
 }
 
 use std::io::Read as _;
@@ -184,13 +184,13 @@ pub fn hash_vec(track_data: Vec<u8>) -> String {
     sha256::digest(track_data)
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Track {
-    pub name: String,
-    pub author: Option<String>,
-    pub last_modified: Option<u32>,
-    pub track_data: Vec<u8>,
-}
+// #[derive(Debug, PartialEq, Eq, Clone)]
+// pub struct Track {
+//     pub name: String,
+//     pub author: Option<String>,
+//     pub last_modified: Option<u32>,
+//     pub track_data: Vec<u8>,
+// }
 
 pub(crate) mod read {
     #[inline]

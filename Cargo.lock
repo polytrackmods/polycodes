@@ -398,6 +398,7 @@ dependencies = [
  "flate2",
  "num_enum",
  "sha256",
+ "type-equalities",
 ]
 
 [[package]]
@@ -544,6 +545,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2abe9b86193656635d2411dc43050282ca48aa31c2451210f4202550afb7526"
 dependencies = [
  "winnow",
+]
+
+[[package]]
+name = "type-equalities"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4af4e18073e1b870efcf60be674c7fa244843fa5b6d9481ce9214d2d9dc7fdfc"
+dependencies = [
+ "rustversion",
 ]
 
 [[package]]

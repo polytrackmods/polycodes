@@ -2,24 +2,23 @@
 #[cfg(test)]
 mod tests;
 
-use crate::tools::{self, hash_vec, prelude::*};
+use crate::tools::{self, prelude::*};
+use crate::{Block, Part, Track};
 
 pub const CP_IDS: [u8; 4] = [52, 65, 75, 77];
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct TrackInfo {
-    pub parts: Vec<Part>,
+pub struct V4Track {
+    pub parts: Vec<V4Part>,
 }
-
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Part {
+pub struct V4Part {
     pub id: u8,
     pub amount: u32,
-    pub blocks: Vec<Block>,
+    pub blocks: Vec<V4Block>,
 }
-
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Block {
+pub struct V4Block {
     pub x: i32,
     pub y: i32,
     pub z: i32,
@@ -28,99 +27,119 @@ pub struct Block {
     pub cp_order: Option<u16>,
 }
 
-#[must_use]
-pub fn decode_track_code(track_code: &str) -> Option<Track> {
-    let track_code = track_code.get(2..)?;
-    let metadata = tools::decode(track_code.get(..2)?)?;
-    let name_len = *metadata.first()? as usize;
-    let track_name_raw = tools::decode(track_code.get(2..2 + name_len)?)?;
-    let name = String::from_utf8(track_name_raw).ok()?;
-    let track_data = tools::decompress(&tools::decode(track_code.get(2 + name_len..)?)?)?;
-    Some(Track {
-        name,
-        author: None,
-        last_modified: None,
-        track_data,
-    })
-}
+impl Track for V4Track {
+    type Part = V4Part;
 
-#[must_use]
-/// Encodes the given track struct into a track code.
-/// Returns [`None`] if something failed in the process.
-///
-/// Output might differ slightly from Polytrack's output
-/// because of Zlib shenanigans, but is still compatible.
-pub fn encode_track_code(track: &Track) -> Option<String> {
-    let track_data = tools::encode(&tools::compress_final(&track.track_data)?)?;
-
-    let name_raw = track.name.as_bytes().to_vec();
-    let name = tools::encode(&name_raw)?;
-    let metadata = tools::encode(&[name.len() as u8])?;
-
-    // prepend the "v3"
-    let track_code = String::from("v3") + &metadata + &name + &track_data;
-    Some(track_code)
-}
-
-#[must_use]
-pub fn decode_track_data(data: &[u8]) -> Option<TrackInfo> {
-    let mut offset = 0;
-    let mut parts = Vec::new();
-    while offset < data.len() {
-        let id = read_u16(data, &mut offset)? as u8;
-        let amount = read_u32(data, &mut offset)?;
-
-        let mut blocks = Vec::new();
-        for _ in 0..amount {
-            let x = read_i24(data, &mut offset)? - i32::pow(2, 23);
-            let y = read_i24(data, &mut offset)?;
-            let z = read_i24(data, &mut offset)? - i32::pow(2, 23);
-
-            let rotation = read_u8(data, &mut offset)? & 3;
-
-            let cp_order = if CP_IDS.contains(&id) {
-                Some(read_u16(data, &mut offset)?)
-            } else {
-                None
-            };
-            blocks.push(Block {
-                x,
-                y,
-                z,
-                rotation,
-                cp_order,
-            });
-        }
-        parts.push(Part { id, amount, blocks });
+    type Metadata = ();
+    fn meta(&self) -> Self::Metadata {}
+    fn parts(&self) -> Vec<Self::Part> {
+        self.parts.clone()
     }
 
-    Some(TrackInfo { parts })
-}
-
-#[must_use]
-/// Encodes the `TrackInfo` struct into raw binary data.
-pub fn encode_track_data(track_info: &TrackInfo) -> Option<Vec<u8>> {
-    let mut data = Vec::new();
-    for part in &track_info.parts {
-        write_u16(&mut data, part.id.into());
-        write_u32(&mut data, part.amount);
-        for block in &part.blocks {
-            write_u24(&mut data, (block.x + i32::pow(2, 23)).cast_unsigned());
-            write_u24(&mut data, block.y.cast_unsigned());
-            write_u24(&mut data, (block.z + i32::pow(2, 23)).cast_unsigned());
-            data.push(block.rotation);
-            if let Some(cp_order) = block.cp_order {
-                write_u16(&mut data, cp_order.into());
-            }
-        }
+    fn decode_meta(_: &[u8], _: &mut usize) -> Option<Self::Metadata> {
+        Some(())
+    }
+    fn encode_meta(&self, _: &mut Vec<u8>) {}
+    fn from_data(_: Self::Metadata, parts: Vec<Self::Part>) -> Self {
+        Self { parts }
     }
 
-    Some(data)
-}
+    type TrackInfo = ();
+    fn decode_track_code(track_code: &str) -> Option<(String, Self::TrackInfo, Vec<u8>)> {
+        let track_code = track_code.get(2..)?;
+        let metadata = tools::decode(track_code.get(..2)?)?;
+        let name_len = *metadata.first()? as usize;
+        let track_name_raw = tools::decode(track_code.get(2..2 + name_len)?)?;
+        let name = String::from_utf8(track_name_raw).ok()?;
+        let track_data = tools::decompress(&tools::decode(track_code.get(2 + name_len..)?)?)?;
 
-#[must_use]
-pub fn export_to_id(track_code: &str) -> Option<String> {
-    let track_data = decode_track_code(track_code)?;
-    let id = hash_vec(track_data.track_data);
-    Some(id)
+        Some((name, (), track_data))
+    }
+    fn encode_track_code(name: String, _: Self::TrackInfo, track_data: &[u8]) -> Option<String> {
+        let track_data = tools::encode(&tools::compress_final(&track_data)?)?;
+
+        let name_raw = name.as_bytes().to_vec();
+        let name = tools::encode(&name_raw)?;
+        let metadata = tools::encode(&[name.len() as u8])?;
+
+        // prepend the "v3"
+        let track_code = String::from("v3") + &metadata + &name + &track_data;
+        Some(track_code)
+    }
+}
+impl Part for V4Part {
+    type Block = V4Block;
+
+    fn id(&self) -> u8 {
+        self.id
+    }
+    fn amount(&self) -> u32 {
+        self.amount
+    }
+    fn blocks(&self) -> Vec<Self::Block> {
+        self.blocks.clone()
+    }
+    fn from_data(id: u8, amount: u32, blocks: Vec<Self::Block>) -> Self {
+        Self { id, amount, blocks }
+    }
+
+    fn decode_prelude(data: &[u8], offset: &mut usize) -> Option<(u8, u32)> {
+        Some((read_u16(data, offset)? as u8, read_u32(data, offset)?))
+    }
+    fn encode_prelude(&self, data: &mut Vec<u8>) {
+        write_u16(data, self.id.into());
+        write_u32(data, self.amount);
+    }
+}
+impl Block for V4Block {
+    type Track = V4Track;
+
+    type Extra = Option<u16>;
+    fn extra_data(&self) -> Self::Extra {
+        self.cp_order
+    }
+
+    type Coord = i32;
+    fn pos(&self) -> (Self::Coord, Self::Coord, Self::Coord) {
+        (self.x, self.y, self.z)
+    }
+    fn rot(&self) -> u8 {
+        self.rotation
+    }
+
+    fn decode(
+        data: &[u8],
+        offset: &mut usize,
+        id: u8,
+        _: <Self::Track as Track>::Metadata,
+    ) -> Option<Self> {
+        let x = read_i24(data, offset)? - i32::pow(2, 23);
+        let y = read_i24(data, offset)?;
+        let z = read_i24(data, offset)? - i32::pow(2, 23);
+
+        let rotation = read_u8(data, offset)? & 3;
+
+        let cp_order = if CP_IDS.contains(&id) {
+            Some(read_u16(data, offset)?)
+        } else {
+            None
+        };
+
+        Some(Self {
+            x,
+            y,
+            z,
+            rotation,
+            cp_order,
+        })
+    }
+    fn encode(&self, data: &mut Vec<u8>, _: <Self::Track as Track>::Metadata) {
+        write_u24(data, (self.x + i32::pow(2, 23)).cast_unsigned());
+        write_u24(data, self.y.cast_unsigned());
+        write_u24(data, (self.z + i32::pow(2, 23)).cast_unsigned());
+        data.push(self.rotation);
+        if let Some(cp_order) = self.cp_order {
+            write_u16(data, cp_order.into());
+        }
+    }
 }
