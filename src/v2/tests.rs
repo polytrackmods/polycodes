@@ -1,5 +1,5 @@
 use super::*;
-use crate::{decode_track_data, encode_track_data, export_to_id};
+use crate::{decode_track_data, encode_track_data};
 
 #[test]
 fn track_decode() {

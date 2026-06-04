@@ -56,7 +56,7 @@ impl Track for V4Track {
         Some((name, (), track_data))
     }
     fn encode_track_code(name: String, _: Self::TrackInfo, track_data: &[u8]) -> Option<String> {
-        let track_data = tools::encode(&tools::compress_final(&track_data)?)?;
+        let track_data = tools::encode(&tools::compress_final(track_data)?)?;
 
         let name_raw = name.as_bytes().to_vec();
         let name = tools::encode(&name_raw)?;
