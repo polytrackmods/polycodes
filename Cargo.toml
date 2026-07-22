@@ -9,9 +9,9 @@ readme = "README.md"
 
 [dependencies]
 base64 = "0.22.1"
-facet = "0.43.2"
-facet-json = "0.43.2"
-flate2 = { version = "1.1.8", default-features = false, features = ["zlib"] }
+facet = "0.46.5"
+facet-json = "0.46.1"
+flate2 = { version = "1.1.9", default-features = false, features = ["zlib"] }
 num_enum = "0.7.5"
 sha256 = "1.6.0"
 type-equalities = "0.3.1"
