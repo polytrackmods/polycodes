@@ -13,7 +13,8 @@ use crate::tools::hash_vec;
 pub trait Track
 where
     // It would be more correct to enforce equality of the `Track` instead of the `Track::Metadata`.
-    // But to avoid a one-time-use `TypeFunction`, it is done this way
+    // But to avoid a one-time-use `TypeFunction`, it is done this way.
+    // If the associated types match correctly, then there is no need to fight with this trait bound, it will automatically be resolved.
     Self::Metadata: IsEqual<<<<Self::Part as Part>::Block as Block>::Track as Track>::Metadata>,
 {
     type Part: Part;
@@ -46,14 +47,14 @@ pub trait Part: Sized {
     fn blocks(&self) -> Vec<Self::Block>;
     fn from_data(id: u8, amount: u32, blocks: Vec<Self::Block>) -> Self;
 
-    fn decode_prelude(data: &[u8], offset: &mut usize) -> Option<(u8, u32)>;
-    fn encode_prelude(&self, data: &mut Vec<u8>);
+    fn decode_header(data: &[u8], offset: &mut usize) -> Option<(u8, u32)>;
+    fn encode_header(&self, data: &mut Vec<u8>);
     fn decode(
         data: &[u8],
         offset: &mut usize,
         meta: <<Self::Block as Block>::Track as Track>::Metadata,
     ) -> Option<Self> {
-        let (id, amount) = Self::decode_prelude(data, offset)?;
+        let (id, amount) = Self::decode_header(data, offset)?;
         let mut blocks = Vec::new();
         for _ in 0..amount {
             blocks.push(Self::Block::decode(data, offset, id, meta)?);
@@ -61,7 +62,7 @@ pub trait Part: Sized {
         Some(Self::from_data(id, amount, blocks))
     }
     fn encode(&self, data: &mut Vec<u8>, meta: <<Self::Block as Block>::Track as Track>::Metadata) {
-        self.encode_prelude(data);
+        self.encode_header(data);
         for block in &self.blocks() {
             block.encode(data, meta);
         }
@@ -89,7 +90,7 @@ pub trait Block: Sized {
 
 pub fn decode_track_data<T: Track>(data: &[u8]) -> Option<T> {
     let mut offset = 0;
-    // ASSUMPTION: All metadata lives before the main data (holds true for v5 and v6, which are the only ones with nontrivial metadata)
+    // ASSUMPTION: All metadata lives before the main data (holds true for v5+, which are the only ones with nontrivial metadata)
     let meta = T::decode_meta(data, &mut offset)?;
     let mut parts = Vec::new();
     while offset < data.len() {
@@ -111,7 +112,7 @@ pub fn encode_track_data<T: Track>(track: &T) -> Vec<u8> {
     let mut data = Vec::new();
     let meta = track.meta();
 
-    // ASSUMPTION: All metadata lives before the main data (holds true for v5 and v6, which are the only ones with nontrivial metadata)
+    // ASSUMPTION: All metadata lives before the main data (holds true for v5+, which are the only ones with nontrivial metadata)
     track.encode_meta(&mut data);
     for part in track.parts() {
         part.encode(

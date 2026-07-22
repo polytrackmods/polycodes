@@ -1,4 +1,3 @@
-#![allow(clippy::cast_possible_wrap)]
 #[cfg(test)]
 mod tests;
 
@@ -186,10 +185,10 @@ impl Part for V5Part {
         Self { id, amount, blocks }
     }
 
-    fn decode_prelude(data: &[u8], offset: &mut usize) -> Option<(u8, u32)> {
-        Some((read_u8(data, offset)? as u8, read_u32(data, offset)?))
+    fn decode_header(data: &[u8], offset: &mut usize) -> Option<(u8, u32)> {
+        Some((read_u8(data, offset)?, read_u32(data, offset)?))
     }
-    fn encode_prelude(&self, data: &mut Vec<u8>) {
+    fn encode_header(&self, data: &mut Vec<u8>) {
         data.push(self.id);
         write_u32(data, self.amount);
     }
