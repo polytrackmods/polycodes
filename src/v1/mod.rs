@@ -2,7 +2,7 @@
 #[cfg(test)]
 mod tests;
 
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use facet::Facet;
 
@@ -23,7 +23,7 @@ pub struct Track {
 #[derive(Debug, Facet, PartialEq, Eq)]
 struct JsonTrackInfo {
     pub version: u32,
-    pub parts: BTreeMap<String, Vec<i32>>,
+    pub parts: HashMap<String, Vec<i32>>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]

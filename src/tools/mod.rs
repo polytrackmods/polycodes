@@ -155,7 +155,7 @@ fn deflate_with_window(input: &[u8], window_bits: u8) -> Option<Vec<u8>> {
     let mut compressor =
         flate2::Compress::new_with_window_bits(Compression::best(), true, window_bits);
     let mut output = Vec::new();
-    let mut buffer = [0u8; 65536];
+    let mut buffer = [0u8; 16384];
     let mut input_offset = 0;
     loop {
         let before_in = compressor.total_in();

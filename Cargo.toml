@@ -1,10 +1,10 @@
 [package]
 name = "polytrack-codes"
-version = "0.4.0-pre.2"
+version = "0.4.0-pre.3"
 edition = "2024"
 license = "MIT"
 description = "Collection of utilities to work with PolyTrack's track codes"
-repository = "https://codeberg.org/ireozar/polycodes"
+repository = "https://codeberg.org/polytools/polycodes"
 readme = "README.md"
 
 [dependencies]
